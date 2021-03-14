@@ -6,19 +6,16 @@ import lombok.val;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class RecordKeyFileParser {
 
-    public static Map<String /*field name*/, Class<? extends Value<?>>> process(URI filepath) {
+    public static Map<String /*field name*/, Class<? extends Value<?>>> process(BufferedReader bufferedReader) {
 
         val m = new HashMap<String /*field name*/, Class<? extends Value<?>>>();
 
-        try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(filepath))) {
+        try (bufferedReader) {
 
             String line;
 

@@ -5,15 +5,15 @@ import chriniko.kv.datainjector.type.*;
 import com.github.javafaker.Faker;
 import org.apache.commons.lang3.RandomUtils;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 public final class DataGenerator {
@@ -26,33 +26,33 @@ public final class DataGenerator {
 
         where:
 
-        -n  indicates the number of lines (i.e. separate data) that we would like to generate (e.g. 1000)
+            -n  indicates the number of lines (i.e. separate data) that we would like to generate (e.g. 1000)
 
-        -d  is the maximum level of nesting (i.e. how many times in a line a value can have a set of { key : values } ).
-            Zero means no nesting, i.e. there is only one set of key-values per line (in the value of the
-            high level key)
+            -d  is the maximum level of nesting (i.e. how many times in a line a value can have a set of { key : values } ).
+                Zero means no nesting, i.e. there is only one set of key-values per line (in the value of the
+                high level key)
 
-        -m  is the maximum number of keys inside each value.
+            -m  is the maximum number of keys inside each value.
 
-        -l  is the maximum length of a string value whenever you need to generate a string. For example 4
-        means that we can generate Strings of up to length 4 (e.g. “ab”, “abcd”, “a”). We should not generate
-        empty strings (i.e. “” is not correct). Strings can be only letters (upper and lowercase) and numbers. No
-        symbols.
+            -l  is the maximum length of a string value whenever you need to generate a string. For example 4
+            means that we can generate Strings of up to length 4 (e.g. “ab”, “abcd”, “a”). We should not generate
+            empty strings (i.e. “” is not correct). Strings can be only letters (upper and lowercase) and numbers. No
+            symbols.
 
 
-        -k  keyFile.txt is a file containing a space-separated list of key names and their data types that we
-            can potentially use for creating data. For example:
+            -k  keyFile.txt is a file containing a space-separated list of key names and their data types that we
+                can potentially use for creating data. For example:
 
-            name string
-            age int
-            height float
-            street string
-            level int
+                name string
+                age int
+                height float
+                street string
+                level int
 
      */
     public List<Record> create(int noOfLines /*n*/, int depth /*d*/,
                                int keysPerValue /*m*/, int stringLength /*l*/,
-                               @Nullable String keyFile /*k*/) throws URISyntaxException {
+                               @Nullable String keyFile /*k*/) {
 
         if (noOfLines < 1 || noOfLines > 200_000) {
             throw new IllegalStateException("noOfLines(n): should be >= 1 and <= 200_000");
@@ -71,18 +71,24 @@ public final class DataGenerator {
         }
 
 
-        final URI keyFileUri;
+        final BufferedReader keyFileBufferedReader;
         if (keyFile == null) {
-            keyFileUri = Objects.requireNonNull(
-                    this.getClass().getClassLoader().getResource("sampleKeyFile.txt")
-            ).toURI();
+
+            InputStream in = getClass().getResourceAsStream("/sampleKeyFile.txt");
+            keyFileBufferedReader = new BufferedReader(new InputStreamReader(in));
+
+
         } else {
-            keyFileUri = URI.create(keyFile);
+            try {
+                keyFileBufferedReader = Files.newBufferedReader(Paths.get(URI.create(keyFile)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
         final Faker faker = new Faker();
 
-        final Map<String, Class<? extends Value<?>>> dataTypesInfo = RecordKeyFileParser.process(keyFileUri);
+        final Map<String, Class<? extends Value<?>>> dataTypesInfo = RecordKeyFileParser.process(keyFileBufferedReader);
 
         final List<Record> recordsToSaveToDestinationFile = new ArrayList<>();
 
