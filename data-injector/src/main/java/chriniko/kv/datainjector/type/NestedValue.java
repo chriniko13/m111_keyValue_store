@@ -1,13 +1,41 @@
 package chriniko.kv.datainjector.type;
 
 
+import lombok.Setter;
+
 public final class NestedValue extends Value<Value<?>> {
 
-    private final Value<?> value;
+    @Setter
+    private Value<?> value;
 
     public NestedValue(String key, Value<?> value) {
         super(key);
         this.value = value;
+    }
+
+    public NestedValue(String key) {
+        super(key);
+        this.value = null;
+    }
+
+    public static NestedValue combine(String key, NestedValue... ns) {
+        if (ns == null || ns.length < 1) {
+            throw new IllegalArgumentException("ns should has at least 1 record (size >= 1)");
+        }
+
+        NestedValue nv = new NestedValue(key);
+        nv.setValue(ns[0]);
+
+
+        if (ns.length > 1) {
+            ns[0].setValue(ns[1]);
+
+            for (int i=1; i<ns.length - 1; i++) {
+                ns[i].setValue(ns[i+1]);
+            }
+        }
+
+        return nv;
     }
 
     @Override
@@ -31,26 +59,45 @@ public final class NestedValue extends Value<Value<?>> {
         return sb.toString();
     }
 
+    public int depth() {
+
+        Value<?> value = getValue();
+        int res = 0;
+
+        while (value != null) {
+
+            if (value instanceof NestedValue) {
+                res++;
+                value = ((NestedValue) value).getValue();
+            } else {
+                value = null;
+            }
+
+        }
+
+        return res;
+    }
+
     public void asStringHelper(StringBuilder sb) {
         sb.append("\"").append(this.key).append("\" : ");
 
         Value<?> value = getValue();
 
-        boolean opened = false;
+        int opened = 0;
         while (value != null) {
 
             // construct string builder correctly
             if (value instanceof NestedValue) {
 
                 sb.append("{").append("\"").append(value.key).append("\" : ");
-                opened = true;
+                opened++;
 
             } else {
                 sb.append(value.asString());
 
-                if (opened) {
+                if (opened > 0) {
                     sb.append("}");
-                    opened = false;
+                    opened--;
                 }
             }
 
@@ -62,5 +109,12 @@ public final class NestedValue extends Value<Value<?>> {
             }
 
         } // while.
+
+
+        // Note: add remaining closing parenthesis: }
+        while (opened > 0) {
+            sb.append("}");
+            opened--;
+        }
     }
 }

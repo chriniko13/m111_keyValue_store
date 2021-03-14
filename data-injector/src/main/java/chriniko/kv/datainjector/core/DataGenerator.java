@@ -5,9 +5,16 @@ import chriniko.kv.datainjector.type.*;
 import com.github.javafaker.Faker;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.IntStream;
 
 public final class DataGenerator {
 
@@ -98,47 +105,92 @@ public final class DataGenerator {
 
                 if (fieldName.equals("name") && fieldType.equals(StringValue.class)) {
 
-                    if (depth == 1) {
-                        String username = faker.name().username();
-                        if (username.length() > stringLength) {
-                            username = username.substring(0, stringLength);
-                        }
+                    String username = faker.name().username();
+                    if (username.length() > stringLength) {
+                        username = username.substring(0, stringLength);
+                    }
+                    StringValue stringValue = new StringValue("name", username);
 
-                        listValue.add(new StringValue("name", username));
+
+                    if (depth == 1) {
+                        listValue.add(stringValue);
                     } else {
-                        //TODO
+                        listValue.add(
+                                NestedValue.combine("nestedName",
+                                        IntStream.rangeClosed(1, depth)
+                                                .boxed()
+                                                .map(r -> new NestedValue("nested" + r, stringValue))
+                                                .toArray(NestedValue[]::new)
+                                )
+                        );
                     }
 
                 } else if (fieldName.equals("age") && fieldType.equals(IntValue.class)) {
 
+                    IntValue intValue = new IntValue("age", getRandomNumber(10, 99));
                     if (depth == 1) {
-                        listValue.add(new IntValue("age", getRandomNumber(10, 99)));
+                        listValue.add(intValue);
                     } else {
-                        //TODO
+
+                        listValue.add(
+                                NestedValue.combine("nestedAge",
+                                        IntStream.rangeClosed(1, depth)
+                                                .boxed()
+                                                .map(r -> new NestedValue("nested" + r, intValue))
+                                                .toArray(NestedValue[]::new)
+                                )
+                        );
                     }
 
                 } else if (fieldName.equals("height") && fieldType.equals(FloatValue.class)) {
 
+                    FloatValue floatValue = new FloatValue("height", getRandomNumber(1.00F, 2.35F));
                     if (depth == 1) {
-                        listValue.add(new FloatValue("height", getRandomNumber(1.00F, 2.35F)));
+                        listValue.add(floatValue);
                     } else {
-                        //TODO
+
+                        listValue.add(
+                                NestedValue.combine("nestedHeight",
+                                        IntStream.rangeClosed(1, depth)
+                                                .boxed()
+                                                .map(r -> new NestedValue("nested" + r, floatValue))
+                                                .toArray(NestedValue[]::new)
+                                )
+                        );
                     }
 
                 } else if (fieldName.equals("street") && fieldType.equals(StringValue.class)) {
 
+                    StringValue stringValue = new StringValue("street", faker.address().fullAddress());
                     if (depth == 1) {
-                        listValue.add(new StringValue("street", faker.address().fullAddress()));
+                        listValue.add(stringValue);
                     } else {
-                        //TODO
+
+                        listValue.add(
+                                NestedValue.combine("nestedStreet",
+                                        IntStream.rangeClosed(1, depth)
+                                                .boxed()
+                                                .map(r -> new NestedValue("nested" + r, stringValue))
+                                                .toArray(NestedValue[]::new)
+                                )
+                        );
                     }
 
                 } else if (fieldName.equals("level") && fieldType.equals(IntValue.class)) {
 
+                    IntValue intValue = new IntValue("level", getRandomNumber(1, 20));
                     if (depth == 1) {
-                        listValue.add(new IntValue("level", getRandomNumber(1, 20)));
+                        listValue.add(intValue);
                     } else {
-                        // TODO
+
+                        listValue.add(
+                                NestedValue.combine("nestedLevel",
+                                        IntStream.rangeClosed(1, depth)
+                                                .boxed()
+                                                .map(r -> new NestedValue("nested" + r, intValue))
+                                                .toArray(NestedValue[]::new)
+                                )
+                        );
                     }
 
                 } else {
@@ -148,26 +200,53 @@ public final class DataGenerator {
 
                     if (fieldType.equals(EmptyValue.class)) {
 
+                        EmptyValue emptyValue = new EmptyValue();
                         if (depth == 1) {
-                            listValue.add(new EmptyValue());
+                            listValue.add(emptyValue);
                         } else {
-                            //TODO
+
+                            listValue.add(
+                                    NestedValue.combine("nestedEmpty",
+                                            IntStream.rangeClosed(1, depth)
+                                                    .boxed()
+                                                    .map(r -> new NestedValue("nested" + r, emptyValue))
+                                                    .toArray(NestedValue[]::new)
+                                    )
+                            );
                         }
 
                     } else if (fieldType.equals(FloatValue.class)) {
 
+                        FloatValue floatValue = new FloatValue("sampleFloat" + (++idSequence), getRandomNumber(12.00F, 45.00F));
                         if (depth == 1) {
-                            listValue.add(new FloatValue("sampleFloat" + (++idSequence), getRandomNumber(12.00F, 45.00F)));
+                            listValue.add(floatValue);
                         } else {
-                            //TODO
+
+                            listValue.add(
+                                    NestedValue.combine("nestedSampleFloat",
+                                            IntStream.rangeClosed(1, depth)
+                                                    .boxed()
+                                                    .map(r -> new NestedValue("nested" + r, floatValue))
+                                                    .toArray(NestedValue[]::new)
+                                    )
+                            );
                         }
 
                     } else if (fieldType.equals(IntValue.class)) {
 
+                        IntValue intValue = new IntValue("sampleInt" + (++idSequence), getRandomNumber(12, 45));
                         if (depth == 1) {
-                            listValue.add(new FloatValue("sampleInt" + (++idSequence), getRandomNumber(12, 45)));
+                            listValue.add(intValue);
                         } else {
-                            //TODO
+
+                            listValue.add(
+                                    NestedValue.combine("nestedSampleInt",
+                                            IntStream.rangeClosed(1, depth)
+                                                    .boxed()
+                                                    .map(r -> new NestedValue("nested" + r, intValue))
+                                                    .toArray(NestedValue[]::new)
+                                    )
+                            );
                         }
 
                     } else if (fieldType.equals(NestedValue.class)) {
@@ -175,15 +254,24 @@ public final class DataGenerator {
 
                     } else if (fieldType.equals(StringValue.class)) {
 
-                        if (depth == 1) {
-                            String fact = faker.chuckNorris().fact();
-                            if (fact.length() > stringLength) {
-                                fact = fact.substring(0, stringLength);
-                            }
+                        String fact = faker.chuckNorris().fact();
+                        if (fact.length() > stringLength) {
+                            fact = fact.substring(0, stringLength);
+                        }
+                        StringValue stringValue = new StringValue("sampleString" + (++idSequence), fact);
 
-                            listValue.add(new StringValue("sampleString" + (++idSequence), fact));
+                        if (depth == 1) {
+                            listValue.add(stringValue);
                         } else {
-                            //TODO
+
+                            listValue.add(
+                                    NestedValue.combine("nestedSampleString",
+                                            IntStream.rangeClosed(1, depth)
+                                                    .boxed()
+                                                    .map(r -> new NestedValue("nested" + r, stringValue))
+                                                    .toArray(NestedValue[]::new)
+                                    )
+                            );
                         }
 
                     } else if (fieldType.equals(ListValue.class)) {
@@ -217,10 +305,31 @@ public final class DataGenerator {
     }
 
 
-    public void sinkResultsToFile(final List<Record> result) {
+    public Path sinkResultsToFile(final String path, final List<Record> result) {
+
         final String outFile = "dataToIndex" + UUID.randomUUID().toString().replace("-", "_") + ".txt";
 
-        // TODO add implementation....
+        Path p = Paths.get(path, outFile);
+        try {
+            Files.deleteIfExists(p);
+            Files.createFile(p);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(p)) {
+
+            for (Record record : result) {
+
+                String recordAsString = record.toString();
+                bufferedWriter.write(recordAsString);
+                bufferedWriter.newLine();
+            }
+
+            return p;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
 }

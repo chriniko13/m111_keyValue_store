@@ -5,6 +5,8 @@ import chriniko.kv.datainjector.type.NestedValue;
 import chriniko.kv.datainjector.type.Value;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,6 +17,9 @@ class DataGeneratorTest {
     void processWorksAsExpected() throws Exception {
 
         // given
+        Path tempDirectory = Files.createTempDirectory("test-dir");
+        System.out.println("tempDirectory: " + tempDirectory);
+
         DataGenerator dataGenerator = new DataGenerator();
 
 
@@ -36,6 +41,10 @@ class DataGeneratorTest {
         Value<?> someValue = listValue.getValue().get(0);
         assertFalse(someValue instanceof NestedValue);
 
+        Path path = dataGenerator.sinkResultsToFile(tempDirectory.toString(), records);
+        System.out.println("to see created file check path: " + path);
+
+
 
         // when (keysPerValue more than entries in sampleKeyFile.txt)
         records = dataGenerator.create(20, 1, 20, 60, null);
@@ -54,6 +63,9 @@ class DataGeneratorTest {
 
         someValue = listValue.getValue().get(0);
         assertFalse(someValue instanceof NestedValue);
+
+        path = dataGenerator.sinkResultsToFile(tempDirectory.toString(), records);
+        System.out.println("to see created file check path: " + path);
 
 
 
@@ -75,6 +87,11 @@ class DataGeneratorTest {
 
         someValue = listValue.getValue().get(0);
         assertTrue(someValue instanceof NestedValue);
-        // TODO check that nesting is 5
+
+        NestedValue nestedValue = (NestedValue) someValue;
+        assertEquals(5, nestedValue.depth());
+
+        path = dataGenerator.sinkResultsToFile(tempDirectory.toString(), records);
+        System.out.println("to see created file check path: " + path);
     }
 }
