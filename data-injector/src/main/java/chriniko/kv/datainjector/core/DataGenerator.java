@@ -80,6 +80,7 @@ public final class DataGenerator {
 
         } else {
             try {
+                //TODO test if it works...
                 keyFileBufferedReader = Files.newBufferedReader(Paths.get(URI.create(keyFile)));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

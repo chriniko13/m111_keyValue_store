@@ -1,7 +1,7 @@
 
-### Data Injector
+# Data Injector
 
-#### Description
+## Description
 
 
 The goal of the program is to randomly generate as much data as was specified by the `-n` parameter, up
@@ -15,10 +15,10 @@ key2, key3, etc. for easier debugging.
 
 
 
-#### How to run tests
+### How to run tests
 * `mvn clean test`
 
-#### How to build and run jar
+### How to build and run jar
 * `mvn clean install` (on the root module: `m111_kv_nikolaos_christidis`)
     * Sample output:
     ```text
@@ -55,7 +55,8 @@ key2, key3, etc. for easier debugging.
       [INFO] ------------------------------------------------------------------------
     ```
 
-* So now execute the jar with your selected input parameters, eg: ``
+
+* So now execute the jar with your selected input parameters, eg: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50`
   * Sample output:
   ```text
     nchristidis@nchristidis-gl502vmk ~/Desktop/m111_kv_christidis_nikolaos (main)$ java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50
@@ -80,5 +81,34 @@ key2, key3, etc. for easier debugging.
         "8d896da2-47f9-420f-a4a0-2bc084881aeb" : {"level" : 6 ; "street" : "Apt. 086 494 Douglas Stream, North Millardton, WI 85842" ; "name" : "caryl.roob" ; "age" : 95 ; "height" : 2.2011204}
 
     ```
-  
+    
+### More info in provided parameters
+* ```text
+        Parameters passed:
+            -n  indicates the number of lines (i.e. separate data) that we would like to generate (e.g. 1000)
 
+            -d  is the maximum level of nesting (i.e. how many times in a line a value can have a set of { key : values } ).
+                Zero means no nesting, i.e. there is only one set of key-values per line (in the value of the
+                high level key)
+
+            -m  is the maximum number of keys inside each value.
+
+            -l  is the maximum length of a string value whenever you need to generate a string. For example 4
+            means that we can generate Strings of up to length 4 (e.g. “ab”, “abcd”, “a”). We should not generate
+            empty strings (i.e. “” is not correct). Strings can be only letters (upper and lowercase) and numbers. No
+            symbols.
+
+
+            -k  keyFile.txt is a file containing a space-separated list of key names and their data types that we
+                can potentially use for creating data. For example:
+
+                name string
+                age int
+                height float
+                street string
+                level int
+  ```
+  
+* Keep in mind that parameters are passed as positional (not name binding ones), correct usage: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50`
+
+* If no -k (keyFile.txt) provided it will use the default one inside classpath resource: [sampleKeyFile.txt](src/main/resources/sampleKeyFile.txt)

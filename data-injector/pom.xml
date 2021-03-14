@@ -22,6 +22,8 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.16</version>
+            <scope>provided</scope>
         </dependency>
 
 
@@ -69,7 +71,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>chriniko.kv.datainjector.Bootstrap</mainClass>
+                            <mainClass>chriniko.kv.datainjector.BootstrapDataInjector</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
