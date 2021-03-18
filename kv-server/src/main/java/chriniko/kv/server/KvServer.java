@@ -15,14 +15,22 @@ public class KvServer {
     // Every socket has its own ByteBuffer to operate independently.
     private static final ConcurrentHashMap<SocketChannel, ByteBuffer> sockets = new ConcurrentHashMap<>();
 
+    private final String serverName;
     private final KvParser kvParser;
+    private final KvStorageEngine kvStorageEngine;
 
-    public KvServer(KvParser kvParser) {
+
+    private KvServer(String serverName, KvParser kvParser, KvStorageEngine kvStorageEngine) {
+        this.serverName = serverName;
         this.kvParser = kvParser;
+        this.kvStorageEngine = kvStorageEngine;
     }
 
+    public static KvServer create(String serverName) {
+        return new KvServer(serverName, new KvParser(),  new KvStorageEngine());
+    }
 
-    public void run(String hostname, int port) throws IOException {
+    public void run(String hostname, int port, Runnable callbackToExecuteWhenServerIsUp) throws IOException {
 
         final ServerSocketChannel serverSocket = ServerSocketChannel.open(); // Creating the server on port 8080
 
@@ -35,7 +43,9 @@ public class KvServer {
         final Selector selector = Selector.open();
         serverSocket.register(selector, SelectionKey.OP_ACCEPT); // Interested only in Accept connection
 
-        System.out.println("### kvServer is up and running at: " + inetSocketAddress);
+        System.out.println(">>>" + serverName + "### kvServer is up and running at: " + inetSocketAddress);
+        callbackToExecuteWhenServerIsUp.run();
+
 
         while (true) {
             selector.select(); // BLocks until something happens
@@ -99,7 +109,7 @@ public class KvServer {
         }
 
         byteBuffer.flip();
-        kvParser.process(byteBuffer);
+        kvParser.process(serverName, byteBuffer, kvStorageEngine);
 
         socket.configureBlocking(false); // Required, socket should also be NonBlocking
 
@@ -124,8 +134,8 @@ public class KvServer {
     private void closeSocket(final SocketChannel socket) {
         try {
             socket.close();
-        } catch (IOException ignore) {
-            System.err.println("error occurred during close socket: " + ignore);
+        } catch (IOException ignored) {
+            System.err.println("error occurred during close socket: " + ignored);
         }
     }
 
@@ -149,4 +159,7 @@ public class KvServer {
                 data;
     }
 
+    public KvStorageEngine getStorageEngine() {
+        return kvStorageEngine;
+    }
 }

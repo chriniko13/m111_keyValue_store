@@ -26,11 +26,43 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.javatuples</groupId>
+            <artifactId>javatuples</artifactId>
+        </dependency>
+
         <!-- protocol dependency -->
         <dependency>
             <groupId>org.example</groupId>
             <artifactId>kv-protocol</artifactId>
             <version>${version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+        </dependency>
+
+        <!-- add kv-server dependency for testing purposes -->
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>kv-server</artifactId>
+            <version>${version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
         </dependency>
 
     </dependencies>

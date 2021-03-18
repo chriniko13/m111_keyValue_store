@@ -1,6 +1,7 @@
 package chriniko.kv.broker;
 
 import chriniko.kv.protocol.ProtocolConstants;
+import lombok.EqualsAndHashCode;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -8,18 +9,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
+@EqualsAndHashCode(of = {"socketChannel"})
 public class KvServerClient {
 
-    private static SocketChannel socketChannel;
-    private static ByteBuffer buffer;
-    private static KvServerClient instance;
+    private final SocketChannel socketChannel;
+    private ByteBuffer buffer;
 
     public static KvServerClient start(String host, int port) throws IOException {
-        if (instance == null) {
-            instance = new KvServerClient(host, port);
-        }
-
-        return instance;
+        return new KvServerClient(host, port);
     }
 
     public void stop() throws IOException {
@@ -48,17 +45,16 @@ public class KvServerClient {
         System.out.println("(ADAPT)BYTE BUFFER AFTER READING RESPONSE FROM SERVER: " + buffer);
 
 
-        byte[] slice = new byte[buffer.limit()];
+        final byte[] slice = new byte[buffer.limit()];
         buffer.get(slice, 0, buffer.limit());
-        String sliceAsString = new String(slice);
+        final String sliceAsString = new String(slice);
         System.out.println("SLICE: " + Arrays.toString(slice) + ", AS STR: " + sliceAsString);
 
-        String response = sliceAsString;
-        System.out.println("RESPONSE RECEIVED FROM SERVER: " + response);
+        System.out.println("RESPONSE RECEIVED FROM SERVER: " + sliceAsString);
 
 
         buffer.clear();
-        return response;
+        return sliceAsString;
     }
 
 }

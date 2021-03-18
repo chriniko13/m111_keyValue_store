@@ -3,33 +3,77 @@ package chriniko.kv.broker;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
+import org.javatuples.Pair;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.List;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
-/*
-    The broker should start with the following command:
-        kvBroker -s serverFile.txt -i dataToIndex.txt -k 2
-
-    The  serverFile.txt is a space separated list of server IPs and their respective ports that will be
-    listening for queries and indexing commands. For example:
-    123.123.12.12 8000
-    123.123.12.12 8001
-    123.2.3.4 9000
-
-    Is an example of a serverfile indicating that this broker will be working with 3 servers with the IPs
-    described and on the respective ports described.
-
-    The dataToIndex.txt is a file containing data that was output from the previous part of the project (check data-injector) that was generating the data.
-
-    The k value is the replication factor, i.e. how many different servers will have the same replicated data.
+/**
+ *  The broker should start with the following command:
+ *         kvBroker -s serverFile.txt -i dataToIndex.txt -k 2
+ *
+ *     The  serverFile.txt is a space separated list of server IPs and their respective ports that will be
+ *     listening for queries and indexing commands. For example:
+ *     123.123.12.12 8000
+ *     123.123.12.12 8001
+ *     123.2.3.4 9000
+ *
+ *     Is an example of a serverfile indicating that this broker will be working with 3 servers with the IPs
+ *     described and on the respective ports described.
+ *
+ *     The dataToIndex.txt is a file containing data that was output from the previous part of the project (check data-injector) that was generating the data.
+ *
+ *     The k value is the replication factor, i.e. how many different servers will have the same replicated data.
  */
 public class KvBroker {
 
-    private static final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClients = new ConcurrentHashMap<>();
+    private static final int CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS = 300;
+
+    /**
+     * Server client instance per server contact point.
+     */
+    private final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClientsByContactPoint;
+
+
+    /**
+     * This is populated from {@link CheckKvServersHealthWorker} with the help of {@link KvBroker#kvServerClientsByContactPoint}
+     */
+    private final ConcurrentHashMap<KvServerContactPoint, KvServerHealthStateStats> kvServerHealthStateStatsByContactPoint;
+
+
+    /**
+     * This is populated from {@link CheckKvServersHealthWorker} with the help of {@link KvBroker#kvServerClientsByContactPoint}
+     */
+    private final ConcurrentHashMap<KvServerHealthState, Set<Pair<KvServerClient, KvServerContactPoint>>> kvServerClientsByServerHealthStateStats;
+
+
+    /**
+     * Since we implemented k-replication, the broker should continue to work unless not at least k available servers (up and healthy).
+     *         For example, for k=2 if we had 3 servers running and one is down (i.e 2 left) the server can still compute correct results.
+     *         If >=2 servers are down the broker should output a warning indicating that k or more servers are down and therefore it cannot
+     *         guarantee the correct output.
+     */
+    private int replicationFactor;
+
+
+    private final AtomicBoolean replicationThresholdSatisfied;
+
+
+    public KvBroker() {
+        kvServerClientsByContactPoint = new ConcurrentHashMap<>();
+
+        kvServerHealthStateStatsByContactPoint = new ConcurrentHashMap<>();
+        kvServerClientsByServerHealthStateStats = new ConcurrentHashMap<>();
+
+        replicationThresholdSatisfied = new AtomicBoolean();
+    }
 
     public void start(List<KvServerContactPoint> kvServerContactPoints,
                       BufferedReader dataToIndexBufferedReader,
@@ -39,10 +83,105 @@ public class KvBroker {
             throw new IllegalArgumentException("provided kv-server contact points(-s) are less than provided replicationFactor(-k)");
         }
 
+        this.replicationFactor = replicationFactor;
 
         // Note: first try to connect to all provided contact points
-        for (KvServerContactPoint kvServerContactPoint : kvServerContactPoints) {
+        connectToContactPoints(kvServerContactPoints);
 
+        // Note: do our housekeeping stuff when kv broker gets terminated.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("will close all kvServerClients now");
+
+            kvServerClientsByContactPoint.forEach(((kvServerContactPoint, kvServerClient) -> {
+                try {
+                    kvServerClient.stop();
+                } catch (IOException ignored) {
+                }
+            }));
+
+        }));
+
+
+        // Note: now that we have connected to all kv-servers, time to start healthCheck thread-worker, which at a fixed time interval will
+        //       check for the availability (is up?) for all the kvServerContactPoints and keep track of the status on a map
+        final CheckKvServersHealthWorker checkKvServersHealthWorker =
+                new CheckKvServersHealthWorker(CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS,
+
+                        replicationFactor, replicationThresholdSatisfied,
+
+                        kvServerClientsByContactPoint,
+                        kvServerHealthStateStatsByContactPoint, kvServerClientsByServerHealthStateStats
+                );
+        checkKvServersHealthWorker.setName("checkServersHealthWorker");
+        checkKvServersHealthWorker.setDaemon(false);
+        checkKvServersHealthWorker.start();
+
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("will kill checkServersHealthWorker now...");
+            checkKvServersHealthWorker.interrupt();
+        }));
+
+
+        // Note: now is time for each line of generated data to randomly pick k(replicationFactor) servers and send a request of the form PUT data.
+        sendGeneratedDate(dataToIndexBufferedReader, replicationFactor);
+
+
+        System.out.println("start method finished...");
+    }
+
+    // todo get
+
+
+    public boolean getReplicationThresholdSatisfied() {
+        boolean r = replicationThresholdSatisfied.get();
+        if (!r) {
+            System.out.println("WARNING!!! k(replicationFactor) or more servers are down and therefore no guarantees for correct output can be satisfied");
+        }
+        return r;
+    }
+
+    public boolean put(String key, String value, ConsistencyLevel consistencyLevel) {
+        //TODO
+
+        if (consistencyLevel == ConsistencyLevel.ONE) {
+
+
+        } else if (consistencyLevel == ConsistencyLevel.ALL) {
+
+
+
+        } else if (consistencyLevel == ConsistencyLevel.QUORUM) {
+
+
+        } else {
+            throw new IllegalStateException();
+        }
+
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    public boolean delete(String key, ConsistencyLevel consistencyLevel) {
+        //TODO
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    public String get(String key, ConsistencyLevel consistencyLevel) {
+        //TODO
+
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    public Map<KvServerContactPoint, KvServerClient> getKvServerClientsByContactPoint() {
+        return Collections.unmodifiableMap(kvServerClientsByContactPoint);
+    }
+
+
+    // --- infra ---
+
+    private void connectToContactPoints(List<KvServerContactPoint> kvServerContactPoints) throws NotOkayResponseException, IOException {
+
+        for (KvServerContactPoint kvServerContactPoint : kvServerContactPoints) {
             try {
                 KvServerClient kvServerClient = KvServerClient.start(kvServerContactPoint.getHost(), kvServerContactPoint.getPort());
 
@@ -52,7 +191,7 @@ public class KvBroker {
                 if (ProtocolConstants.OKAY_RESP.equals(response)) {
 
                     System.out.println("connected successfully to kv-server: " + kvServerContactPoint);
-                    kvServerClients.put(kvServerContactPoint, kvServerClient);
+                    kvServerClientsByContactPoint.put(kvServerContactPoint, kvServerClient);
 
                 } else {
                     System.err.println("not received okay response from kv-server: " + kvServerContactPoint);
@@ -66,47 +205,42 @@ public class KvBroker {
                 throw e;
             }
         }
-
-        // Note: do our housekeeping stuff when kv broker gets terminated.
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("will close all kvServerClients now");
-
-            kvServerClients.forEach(((kvServerContactPoint, kvServerClient) -> {
-                try {
-                    kvServerClient.stop();
-                } catch (IOException ignored) {
-                }
-            }));
-
-        }));
-
-
-
-        // Note: now that we have connected to all kv-servers, time to start healthCheck thread-worker, which at a fixed time interval will
-        //       check for the availability (is up?) for all the kvServerContactPoints and keep track of the status on a map
-        // TODO....
-
-
-
-
-
-        // Note: now is time for each line of generated data to randomly pick k(replicationFactor) servers and send a request of the form PUT data.
-        // TODO... (resume here)
-
-
     }
 
+    private void sendGeneratedDate(BufferedReader dataToIndexBufferedReader, int replicationFactor) throws IOException {
+        if (dataToIndexBufferedReader == null) {
+            InputStream in = this.getClass().getResourceAsStream("/sampleDataToIndex.txt");
+            dataToIndexBufferedReader = new BufferedReader(new InputStreamReader(in));
+        }
 
-    /**
-     * This method should be used after a call to {@link KvBroker#start(List, BufferedReader, int)} has been made.
-     * @param op
-     * @return
-     */
-    public String executeOperation(Operations op) {
+        final Set<KvServerContactPoint> contactPointsToSendRequests = new HashSet<>();
+        final ArrayList<KvServerContactPoint> contactPoints = new ArrayList<>(kvServerClientsByContactPoint.keySet());
+        // randomly pick k contact points to send the data.
+        while (contactPointsToSendRequests.size() < replicationFactor) {
+            int randomIdx = ThreadLocalRandom.current().nextInt(contactPoints.size());
 
+            KvServerContactPoint cPoint = contactPoints.get(randomIdx);
+            contactPointsToSendRequests.add(cPoint);
+        }
 
-        // TODO add logic...
+        System.out.println("randomly picked k (replicationFactor) contact points: " + contactPointsToSendRequests + " to send generated data");
+        String line;
+        while ((line = dataToIndexBufferedReader.readLine()) != null) {
 
-        throw new UnsupportedOperationException("TODO");
+            System.out.println("will send line: " + line);
+
+            for (KvServerContactPoint contactPointsToSendRequest : contactPointsToSendRequests) {
+                String key = line.split(":")[0];
+                String value = line.substring(key.length() + 1 /* Note: plus one in order to not have the : */);
+
+                KvServerClient kvServerClient = kvServerClientsByContactPoint.get(contactPointsToSendRequest);
+                this.putOperation(kvServerClient, key, value);
+            }
+        }
+    }
+
+    private void putOperation(KvServerClient kvServerClient, String key, String value) throws IOException {
+        System.out.println("will put key: " + key + " --- value: " + value);
+        kvServerClient.sendMessage(Operations.PUT.getMsgOp() + " " + key + ": " + value);
     }
 }
