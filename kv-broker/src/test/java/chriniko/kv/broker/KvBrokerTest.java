@@ -4,18 +4,30 @@ import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.server.KvServer;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class KvBrokerTest {
+
+    private ExecutorService workerPool;
+
+    @BeforeEach
+    void beforeEach() {
+        workerPool = Executors.newCachedThreadPool();
+    }
+
+    @AfterEach
+    void afterEach() {
+        workerPool.shutdown();
+    }
 
 
     @Test
@@ -27,29 +39,29 @@ class KvBrokerTest {
         final KvServer kvServer1 = KvServer.create("server1");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer1.run("localhost", 1711, () -> serversReady.countDown());
+                kvServer1.run("localhost", 1711, serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
-        });
+        }, workerPool);
 
         final KvServer kvServer2 = KvServer.create("server2");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer2.run("localhost", 1712, () -> serversReady.countDown());
+                kvServer2.run("localhost", 1712, serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
-        });
+        }, workerPool);
 
         final KvServer kvServer3 = KvServer.create("server3");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer3.run("localhost", 1713, () -> serversReady.countDown());
+                kvServer3.run("localhost", 1713, serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
-        });
+        }, workerPool);
 
 
         boolean reachedZero = serversReady.await(15, TimeUnit.SECONDS);
@@ -64,19 +76,20 @@ class KvBrokerTest {
             try {
                 kvBroker.start(
                         Arrays.asList(
-                                new KvServerContactPoint("localhost", 1711),
-                                new KvServerContactPoint("localhost", 1712),
-                                new KvServerContactPoint("localhost", 1713)
+                                new KvServerContactPoint("server1", "localhost", 1711),
+                                new KvServerContactPoint("server2", "localhost", 1712),
+                                new KvServerContactPoint("server3", "localhost", 1713)
                         ),
-
                         null,
-                        replicationFactor
+                        true,
+                        replicationFactor,
+                        null
                 );
             } catch (NotOkayResponseException | IOException | ErrorReceivedFromKvServerException e) {
                 fail(e);
             }
 
-        });
+        }, workerPool);
 
 
         // then
@@ -151,29 +164,29 @@ class KvBrokerTest {
         final KvServer kvServer1 = KvServer.create("server1");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer1.run("localhost", 1721, () -> serversReady.countDown());
+                kvServer1.run("localhost", 1721, serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
-        });
+        }, workerPool);
 
         final KvServer kvServer2 = KvServer.create("server2");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer2.run("localhost", 1722, () -> serversReady.countDown());
+                kvServer2.run("localhost", 1722, serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
-        });
+        }, workerPool);
 
         final KvServer kvServer3 = KvServer.create("server3");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer3.run("localhost", 1723, () -> serversReady.countDown());
+                kvServer3.run("localhost", 1723, serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
-        });
+        }, workerPool);
 
 
         boolean reachedZero = serversReady.await(15, TimeUnit.SECONDS);
@@ -186,12 +199,14 @@ class KvBrokerTest {
 
         kvBroker.start(
                 Arrays.asList(
-                        new KvServerContactPoint("localhost", 1721),
-                        new KvServerContactPoint("localhost", 1722),
-                        new KvServerContactPoint("localhost", 1723)
+                        new KvServerContactPoint("server1", "localhost", 1721),
+                        new KvServerContactPoint("server2", "localhost", 1722),
+                        new KvServerContactPoint("server3", "localhost", 1723)
                 ),
                 null,
-                replicationFactor
+                false,
+                replicationFactor,
+                null
         );
 
 
@@ -232,7 +247,6 @@ class KvBrokerTest {
         }
 
         assertEquals(1, occurrences);
-
 
 
         // when
@@ -292,5 +306,113 @@ class KvBrokerTest {
 
 
     // TODO put test consistency levels and if failures work as expected....
+
+    // TODO get test consistency levels and if failures work as expected....
+
+
+    @Test
+    void getWorksAsExpected() throws Exception {
+
+        // given (having started the servers)
+        final CountDownLatch serversReady = new CountDownLatch(3);
+
+        final KvServer kvServer1 = KvServer.create("server1");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer1.run("localhost", 1741, serversReady::countDown);
+            } catch (IOException e) {
+                e.printStackTrace(System.err);
+                fail(e);
+            }
+        }, workerPool);
+
+        final KvServer kvServer2 = KvServer.create("server2");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer2.run("localhost", 1742, serversReady::countDown);
+            } catch (IOException e) {
+                e.printStackTrace(System.err);
+                fail(e);
+            }
+        }, workerPool);
+
+        final KvServer kvServer3 = KvServer.create("server3");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer3.run("localhost", 1743, serversReady::countDown);
+            } catch (IOException e) {
+                e.printStackTrace(System.err);
+                fail(e);
+            }
+        }, workerPool);
+
+
+        boolean reachedZero = serversReady.await(15, TimeUnit.SECONDS);
+        if (!reachedZero) fail("servers could not run!");
+
+
+        // given (start the broker)
+        final CountDownLatch brokerIsReady = new CountDownLatch(1);
+        final int replicationFactor = 2;
+        final KvBroker kvBroker = new KvBroker();
+
+        CompletableFuture.runAsync(() -> {
+
+            try {
+                kvBroker.start(
+                        Arrays.asList(
+                                new KvServerContactPoint("server1", "localhost", 1741),
+                                new KvServerContactPoint("server2", "localhost", 1742),
+                                new KvServerContactPoint("server3", "localhost", 1743)
+                        ),
+                        null,
+                        false,
+                        replicationFactor,
+                        brokerIsReady::countDown
+                );
+            } catch (NotOkayResponseException | IOException | ErrorReceivedFromKvServerException e) {
+                e.printStackTrace(System.err);
+            }
+
+        }, workerPool);
+
+
+        reachedZero = brokerIsReady.await(15, TimeUnit.SECONDS);
+        if (!reachedZero) fail("broker could not start");
+
+
+        // given (add an entry with put operation)
+        kvBroker.put("sample-key", "{\"name\": 123}", ConsistencyLevel.ALL);
+        String v = kvServer1.getStorageEngine().fetch("sample-key");
+        assertNotNull(v);
+
+        v = kvServer2.getStorageEngine().fetch("sample-key");
+        assertNotNull(v);
+
+        v = kvServer3.getStorageEngine().fetch("sample-key");
+        assertNotNull(v);
+
+
+        // when
+        Optional<String> result = kvBroker.get("sample-key", ConsistencyLevel.ONE);
+
+        // then
+        assertTrue(result.isPresent());
+        assertEquals("{\"name\": 123}", result.get());
+
+
+        // when
+        result = kvBroker.get("sample-key-fooBar", ConsistencyLevel.ONE);
+
+        // then
+        assertFalse(result.isPresent());
+
+
+        // clear
+        kvBroker.stop();
+        kvServer1.stop();
+        kvServer2.stop();
+        kvServer3.stop();
+    }
 
 }

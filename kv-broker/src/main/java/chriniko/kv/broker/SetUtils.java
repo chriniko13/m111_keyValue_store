@@ -9,6 +9,9 @@ public class SetUtils {
 
 
     public static <T> Set<T> pickN(int n, Set<T> s) {
+        if (s == null || s.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
 
         if (n < 1 || n > s.size()) {
             throw new IllegalArgumentException();
@@ -37,8 +40,10 @@ public class SetUtils {
         return selected;
     }
 
-
     public static <T> T pickOneRandomly(Set<T> s) {
+        if (s == null || s.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
 
         int randomIdx = ThreadLocalRandom.current().nextInt(s.size());
 

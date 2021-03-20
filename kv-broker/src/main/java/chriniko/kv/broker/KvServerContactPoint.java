@@ -13,6 +13,8 @@ import lombok.ToString;
 @ToString
 public class KvServerContactPoint {
 
+    private final String serverName;
     private final String host;
     private final int port;
+
 }

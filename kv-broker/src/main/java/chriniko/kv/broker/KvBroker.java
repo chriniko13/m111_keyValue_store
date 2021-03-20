@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class KvBroker {
 
-    private static final int CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS = 300;
+    private static final int CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS = 1000;
 
     /**
      * Server client instance per server contact point.
@@ -100,9 +100,12 @@ public class KvBroker {
 
     }
 
+
     public void start(List<KvServerContactPoint> kvServerContactPoints,
                       BufferedReader dataToIndexBufferedReader,
-                      int replicationFactor) throws NotOkayResponseException, IOException, ErrorReceivedFromKvServerException {
+                      boolean injectGeneratedData,
+                      int replicationFactor,
+                      Runnable readyAction) throws NotOkayResponseException, IOException, ErrorReceivedFromKvServerException {
 
         if (kvServerContactPoints.size() < replicationFactor) {
             throw new IllegalArgumentException("provided kv-server contact points(-s) are less than provided replicationFactor(-k)");
@@ -148,21 +151,32 @@ public class KvBroker {
 
 
         // Note: now is time for each line of generated data to randomly pick k(replicationFactor) servers and send a request of the form PUT data.
-        sendGeneratedData(dataToIndexBufferedReader, replicationFactor);
-
-
-        // Note: give some time to checkKvServersHealthWorker to run.
-        try {
-            Thread.sleep(700);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+        if (injectGeneratedData) {
+            sendGeneratedData(dataToIndexBufferedReader, replicationFactor);
         }
 
+        // Note: give some time to checkKvServersHealthWorker to run.
+        int totalTries = 5;
+        int pacingInMs = 150;
+        int currentTry = 0;
+        while (currentTry++ < totalTries) {
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r != null && r.size() == kvServerClientsByContactPoint.size()) {
+                break;
+            }
+
+            try {
+                Thread.sleep(pacingInMs);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
+        if (readyAction != null) {
+            readyAction.run();
+        }
         System.out.println("start method finished...");
     }
-
-    // todo get
 
     public boolean getReplicationThresholdSatisfied() {
         boolean r = replicationThresholdSatisfied.get();
@@ -206,7 +220,6 @@ public class KvBroker {
                 KvServerClient client = selection.getValue0();
                 putOperation(client, key, value);
             }
-
 
         } else if (consistencyLevel == ConsistencyLevel.QUORUM) {
 
@@ -252,14 +265,44 @@ public class KvBroker {
         }
     }
 
-    public boolean delete(String key, ConsistencyLevel consistencyLevel) {
-        //TODO
-        throw new UnsupportedOperationException("TODO");
+    public Optional<String> get(String key, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException {
+
+
+        /*
+            TODO implement...
+                ALL,
+                QUORUM, // Quorum = (sum_of_replication_factors / 2) + 1
+                REPLICATION_FACTOR,
+         */
+
+        if (consistencyLevel == ConsistencyLevel.ONE) {
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r == null || r.isEmpty()) {
+                throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
+            }
+
+            final Pair<KvServerClient, KvServerContactPoint> selection = SetUtils.pickOneRandomly(r);
+
+            System.out.println("will execute get operation against kv-server: " + selection.getValue1());
+
+            final KvServerClient client = selection.getValue0();
+            return getOperation(client, key);
+
+
+        } else {
+
+            // TODO...
+            throw new UnsupportedOperationException("TODO");
+
+        }
+
     }
 
-    public String get(String key, ConsistencyLevel consistencyLevel) {
-        //TODO
+    // todo query
 
+    public boolean delete(String key, ConsistencyLevel consistencyLevel) {
+        //TODO
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -338,6 +381,25 @@ public class KvBroker {
         if (!ProtocolConstants.OKAY_RESP.equals(response)) {
             throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response);
         }
+    }
+
+    private Optional<String> getOperation(KvServerClient kvServerClient, String key) throws IOException, ErrorReceivedFromKvServerException {
+        System.out.println("will get value for key: " + key);
+
+        final String response = kvServerClient.sendMessage(Operations.GET.getMsgOp() + " " + key);
+
+        if (response.contains(ProtocolConstants.OKAY_RESP)) {
+
+            String prefix = ProtocolConstants.OKAY_RESP + "#";
+            String r = response.substring(prefix.length());
+
+            return Optional.of(r);
+        } else if (ProtocolConstants.NOT_FOUND_RESP.equals(response)) {
+            return Optional.empty();
+        } else {
+            throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response);
+        }
+
     }
 
 }

@@ -5,7 +5,10 @@ import chriniko.kv.protocol.ProtocolConstants;
 import org.javatuples.Pair;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,7 +37,11 @@ public class CheckKvServersHealthWorker extends Thread {
      * From this we calculate the: {@link CheckKvServersHealthWorker#kvServerHealthStateStatsByContactPoint} and
      * {@link CheckKvServersHealthWorker#kvServerClientsByServerHealthStateStats}
      */
-    private final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClientsByContactPoint;
+    //TODO create a copy of this....
+    private final ConcurrentHashMap<
+            KvServerContactPoint,
+            Pair<KvServerClient /*owned by broker*/, KvServerClient /*owned by health worker*/>
+            > kvServerClientsByContactPoint;
 
 
     private final ConcurrentHashMap<KvServerContactPoint, KvServerHealthStateStats> kvServerHealthStateStatsByContactPoint;
@@ -55,7 +62,22 @@ public class CheckKvServersHealthWorker extends Thread {
         this.replicationFactor = replicationFactor;
         this.replicationThresholdSatisfied = replicationThresholdSatisfied;
 
-        this.kvServerClientsByContactPoint = kvServerClientsByContactPoint;
+
+        this.kvServerClientsByContactPoint = new ConcurrentHashMap<>();
+        kvServerClientsByContactPoint.forEach((kvServerContactPoint, kvServerClient) -> {
+
+            try {
+                KvServerClient toUseForHealthCheck = kvServerClient.makeCopy();
+
+                System.out.println("ownedByBroker: " + kvServerClient + " --- toUseForHealthCheck: " + toUseForHealthCheck);
+
+                this.kvServerClientsByContactPoint.put(kvServerContactPoint, Pair.with(kvServerClient, toUseForHealthCheck));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+        });
+
 
         this.kvServerHealthStateStatsByContactPoint = kvServerHealthStateStatsByContactPoint;
         this.kvServerClientsByServerHealthStateStats = kvServerClientsByServerHealthStateStats;
@@ -67,16 +89,6 @@ public class CheckKvServersHealthWorker extends Thread {
 
         for (; ; ) {
 
-            // Note: consistency gap for checking health for all servers
-            try {
-                System.out.println("pacing for checkServersHealthWorker...");
-                Thread.sleep(pacingInMs);
-            } catch (InterruptedException e) {
-                if (!Thread.currentThread().isInterrupted()) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
             if (Thread.currentThread().isInterrupted()) {
                 System.out.println("checkServersHealthWorker thread killed!");
                 break;
@@ -84,13 +96,21 @@ public class CheckKvServersHealthWorker extends Thread {
 
 
             // Note: time to maintain the state of each server connected to broker (is up? is down? is not_okay? etc...)
-            kvServerClientsByContactPoint.forEach((kvServerContactPoint, kvServerClient) -> {
+
+            for (Map.Entry<KvServerContactPoint, Pair<KvServerClient, KvServerClient>> entry : kvServerClientsByContactPoint.entrySet()) {
+
+                final KvServerContactPoint kvServerContactPoint = entry.getKey();
+                final Pair<KvServerClient, KvServerClient> p = entry.getValue();
+
+                final KvServerClient kvServerClientToMove = p.getValue0();
+                final KvServerClient kvServerClientToCheckHealth = p.getValue1();
+
 
                 System.out.println("will check health check for server at: " + kvServerContactPoint);
 
                 final KvServerHealthState kvServerHealthState;
                 try {
-                    final String response = kvServerClient.sendMessage(Operations.HEALTH_CHECK.getMsgOp());
+                    final String response = kvServerClientToCheckHealth.sendMessage(Operations.HEALTH_CHECK.getMsgOp());
 
                     if (ProtocolConstants.OKAY_RESP.equals(response)) {
                         kvServerHealthState = KvServerHealthState.UP;
@@ -115,12 +135,12 @@ public class CheckKvServersHealthWorker extends Thread {
 
                         Set<Pair<KvServerClient, KvServerContactPoint>> t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.DOWN);
                         if (t != null) {
-                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                            t.remove(Pair.with(kvServerClientToMove, kvServerContactPoint));
                         }
 
                         t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.NOT_OKAY);
                         if (t != null) {
-                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                            t.remove(Pair.with(kvServerClientToMove, kvServerContactPoint));
                         }
 
 
@@ -128,12 +148,12 @@ public class CheckKvServersHealthWorker extends Thread {
                         // note: maintain valid state.
                         Set<Pair<KvServerClient, KvServerContactPoint>> t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.DOWN);
                         if (t != null) {
-                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                            t.remove(Pair.with(kvServerClientToMove, kvServerContactPoint));
                         }
 
                         t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
                         if (t != null) {
-                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                            t.remove(Pair.with(kvServerClientToMove, kvServerContactPoint));
                         }
                     }
 
@@ -141,7 +161,7 @@ public class CheckKvServersHealthWorker extends Thread {
                         if (v == null) {
                             v = ConcurrentHashMap.newKeySet();
                         }
-                        v.add(Pair.with(kvServerClient, kvServerContactPoint));
+                        v.add(Pair.with(kvServerClientToMove, kvServerContactPoint));
                         return v;
                     });
 
@@ -166,25 +186,26 @@ public class CheckKvServersHealthWorker extends Thread {
                     // note: maintain valid state.
                     Set<Pair<KvServerClient, KvServerContactPoint>> t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
                     if (t != null) {
-                        t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                        t.remove(Pair.with(kvServerClientToMove, kvServerContactPoint));
                     }
 
                     t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.NOT_OKAY);
                     if (t != null) {
-                        t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                        t.remove(Pair.with(kvServerClientToMove, kvServerContactPoint));
                     }
 
                     kvServerClientsByServerHealthStateStats.compute(KvServerHealthState.DOWN, (k, v) -> {
                         if (v == null) {
                             v = ConcurrentHashMap.newKeySet();
                         }
-                        v.add(Pair.with(kvServerClient, kvServerContactPoint));
+                        v.add(Pair.with(kvServerClientToMove, kvServerContactPoint));
 
                         return v;
                     });
 
                 }
-            });
+
+            }
 
 
             // Note: time to check if replication threshold is satisfied.
@@ -201,7 +222,19 @@ public class CheckKvServersHealthWorker extends Thread {
                         serversWithAppStatus.size() >= replicationFactor
                 );
             }
-        }
+
+
+            // Note: consistency gap for checking health for all servers
+            try {
+                System.out.println("pacing for checkServersHealthWorker...");
+                Thread.sleep(pacingInMs);
+            } catch (InterruptedException e) {
+                if (!Thread.currentThread().isInterrupted()) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+        } // for.
 
     }
 }

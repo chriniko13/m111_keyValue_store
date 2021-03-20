@@ -10,6 +10,9 @@ public class KvParser {
 
     public void process(final String serverName, final ByteBuffer byteBuffer, final KvStorageEngine kvStorageEngine) {
 
+        // Note: flip the byte buffer so that we can read from the start correctly.
+        byteBuffer.flip();
+
         System.out.println("\n\n~~~~~~~KvParser(" + serverName + ")~~~~~~~~");
 
         System.out.println("RECEIVED BYTE BUFFER: " + byteBuffer);
@@ -22,7 +25,6 @@ public class KvParser {
             return;
         }
 
-
         if (Operations.HEALTH_CHECK.getMsgOp().equals(messageReceivedFromBroker)) {
 
             String okayResp = ProtocolConstants.OKAY_RESP;
@@ -31,7 +33,7 @@ public class KvParser {
 
         } else if (messageReceivedFromBroker.contains(Operations.PUT.getMsgOp())) {
 
-            // TODO validate string received if is valid...
+            // TODO validate string received if is valid... (RETURN ERROR)
 
             String key = messageReceivedFromBroker.split(":")[0];
             final int keySizeBeforeCleaning = key.length();
@@ -53,17 +55,34 @@ public class KvParser {
 
         } else if (messageReceivedFromBroker.contains(Operations.GET.getMsgOp())) {
 
-            // TODO validate string received if is valid...
+            // TODO validate string received if is valid... (RETURN ERROR)
 
-            //todo
+            String[] s = messageReceivedFromBroker.split(" ");
+            String operation = s[0];
+            String key = s[1];
 
-            String okayResp = ProtocolConstants.OKAY_RESP;
-            System.out.println("WILL REPLY WITH: " + okayResp);
-            writeResponseMessage(byteBuffer, okayResp);
+            System.out.println("get operation: " + operation + " --- key: " + key);
+
+            String result = kvStorageEngine.fetch(key);
+            if (result != null) {
+
+                String okayResp = ProtocolConstants.OKAY_RESP + "#" + result;
+                System.out.println("WILL REPLY WITH: " + okayResp);
+                writeResponseMessage(byteBuffer, okayResp);
+
+            } else {
+
+                String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                System.out.println("WILL REPLY WITH: " + notFoundResp);
+                writeResponseMessage(byteBuffer, notFoundResp);
+
+            }
+
+
 
         } else if (messageReceivedFromBroker.contains(Operations.DELETE.getMsgOp())) {
 
-            // TODO validate string received if is valid...
+            // TODO validate string received if is valid... (RETURN ERROR)
 
             //todo
 
@@ -73,7 +92,7 @@ public class KvParser {
 
         } else if (messageReceivedFromBroker.contains(Operations.QUERY.getMsgOp())) {
 
-            // TODO validate string received if is valid...
+            // TODO validate string received if is valid... (RETURN ERROR)
 
             //todo
 
@@ -93,19 +112,22 @@ public class KvParser {
     private void writeResponseMessage(ByteBuffer byteBuffer, String responseMessage) {
         byte[] bytes = responseMessage.getBytes(StandardCharsets.UTF_8);
 
+        System.out.println("KvParser#writeResponseMessage: " + new String(bytes) + " byteBuffer: " + byteBuffer);
+
+        // Note: now that we have read, time to clear the buffer so that we can write.
+        byteBuffer.clear();
+
         int idx = 0;
         for (byte b : bytes) {
             byteBuffer.put(idx++, b);
         }
+
         byteBuffer.rewind();
         byteBuffer.limit(bytes.length);
 
         System.out.println("REPLY BYTEBUFFER: " + byteBuffer);
+
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~\n\n");
     }
 
-    /*
-      for (int x = 0; x < byteBuffer.limit(); x++) { // read every byte in it.
-            byteBuffer.put(x, (byte) invertCase(byteBuffer.get(x)));
-        }
-     */
 }

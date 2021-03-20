@@ -40,19 +40,22 @@ class CheckKvServersHealthWorkerTest {
         // given
         final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClientsByContactPoint
                 = new ConcurrentHashMap<>();
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("localhost", 8090), kvServerClient);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("localhost", 8091), kvServerClient2);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("localhost", 8092), kvServerClient3);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server1", "localhost", 8090), kvServerClient);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server2", "localhost", 8091), kvServerClient2);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server3", "localhost", 8092), kvServerClient3);
 
 
         Mockito.when(kvServerClient.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenReturn(ProtocolConstants.OKAY_RESP);
+        Mockito.when(kvServerClient.makeCopy()).thenReturn(kvServerClient);
 
         Mockito.when(kvServerClient2.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenReturn("BOOM");
+        Mockito.when(kvServerClient2.makeCopy()).thenReturn(kvServerClient2);
 
         Mockito.when(kvServerClient3.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenThrow(ClosedChannelException.class);
+        Mockito.when(kvServerClient3.makeCopy()).thenReturn(kvServerClient3);
 
         int replicationFactor = 2;
         AtomicBoolean replicationThresholdSatisfied = new AtomicBoolean();
@@ -119,19 +122,22 @@ class CheckKvServersHealthWorkerTest {
         // given
         final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClientsByContactPoint
                 = new ConcurrentHashMap<>();
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("localhost", 8090), kvServerClient);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("localhost", 8091), kvServerClient2);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("localhost", 8092), kvServerClient3);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server1", "localhost", 8090), kvServerClient);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server2", "localhost", 8091), kvServerClient2);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server3", "localhost", 8092), kvServerClient3);
 
 
         Mockito.when(kvServerClient.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenReturn(ProtocolConstants.OKAY_RESP);
+        Mockito.when(kvServerClient.makeCopy()).thenReturn(kvServerClient);
 
         Mockito.when(kvServerClient2.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenReturn(ProtocolConstants.OKAY_RESP);
+        Mockito.when(kvServerClient2.makeCopy()).thenReturn(kvServerClient2);
 
         Mockito.when(kvServerClient3.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenThrow(ClosedChannelException.class);
+        Mockito.when(kvServerClient3.makeCopy()).thenReturn(kvServerClient3);
 
         int replicationFactor = 2;
         AtomicBoolean replicationThresholdSatisfied = new AtomicBoolean();
@@ -168,6 +174,8 @@ class CheckKvServersHealthWorkerTest {
         Mockito.reset(kvServerClient2);
         Mockito.when(kvServerClient2.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenThrow(IOException.class);
+        Mockito.when(kvServerClient2.makeCopy()).thenReturn(kvServerClient2);
+
 
 
         // then
@@ -182,6 +190,7 @@ class CheckKvServersHealthWorkerTest {
         Mockito.reset(kvServerClient2);
         Mockito.when(kvServerClient2.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenReturn(ProtocolConstants.UNKNOWN_COMMAND_RESP);
+        Mockito.when(kvServerClient2.makeCopy()).thenReturn(kvServerClient2);
 
 
         // then
