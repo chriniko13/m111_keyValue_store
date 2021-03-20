@@ -12,7 +12,12 @@ public class KvStorageEngine {
     }
 
     public int totalRecords() {
-        System.out.println(m);
-        return m.size();
+        int size = m.size();
+        System.out.println("total records: " + size);
+        return size;
+    }
+
+    public String fetch(String key) {
+        return m.get(key);
     }
 }

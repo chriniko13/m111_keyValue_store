@@ -30,7 +30,13 @@ public class KvServerClient {
     }
 
     public String sendMessage(String msg) throws IOException {
-        buffer = ByteBuffer.wrap(msg.getBytes()); // TODO optimize....
+
+        byte[] bytes = msg.getBytes();
+        for(int i=0; i<bytes.length; i++) {
+            buffer.put(i, bytes[i]);
+        }
+        buffer.position(0);
+        buffer.limit(bytes.length);
 
         System.out.println("~~~~~~~~~~~~~~~~~~~~");
 

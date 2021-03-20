@@ -1,5 +1,7 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.error.availability.*;
+import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
@@ -16,21 +18,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
- *  The broker should start with the following command:
- *         kvBroker -s serverFile.txt -i dataToIndex.txt -k 2
- *
- *     The  serverFile.txt is a space separated list of server IPs and their respective ports that will be
- *     listening for queries and indexing commands. For example:
- *     123.123.12.12 8000
- *     123.123.12.12 8001
- *     123.2.3.4 9000
- *
- *     Is an example of a serverfile indicating that this broker will be working with 3 servers with the IPs
- *     described and on the respective ports described.
- *
- *     The dataToIndex.txt is a file containing data that was output from the previous part of the project (check data-injector) that was generating the data.
- *
- *     The k value is the replication factor, i.e. how many different servers will have the same replicated data.
+ * The broker should start with the following command:
+ * kvBroker -s serverFile.txt -i dataToIndex.txt -k 2
+ * <p>
+ * The  serverFile.txt is a space separated list of server IPs and their respective ports that will be
+ * listening for queries and indexing commands. For example:
+ * 123.123.12.12 8000
+ * 123.123.12.12 8001
+ * 123.2.3.4 9000
+ * <p>
+ * Is an example of a serverfile indicating that this broker will be working with 3 servers with the IPs
+ * described and on the respective ports described.
+ * <p>
+ * The dataToIndex.txt is a file containing data that was output from the previous part of the project (check data-injector) that was generating the data.
+ * <p>
+ * The k value is the replication factor, i.e. how many different servers will have the same replicated data.
  */
 public class KvBroker {
 
@@ -56,14 +58,15 @@ public class KvBroker {
 
     /**
      * Since we implemented k-replication, the broker should continue to work unless not at least k available servers (up and healthy).
-     *         For example, for k=2 if we had 3 servers running and one is down (i.e 2 left) the server can still compute correct results.
-     *         If >=2 servers are down the broker should output a warning indicating that k or more servers are down and therefore it cannot
-     *         guarantee the correct output.
+     * For example, for k=2 if we had 3 servers running and one is down (i.e 2 left) the server can still compute correct results.
+     * If >=2 servers are down the broker should output a warning indicating that k or more servers are down and therefore it cannot
+     * guarantee the correct output.
      */
     private int replicationFactor;
 
 
     private final AtomicBoolean replicationThresholdSatisfied;
+    private CheckKvServersHealthWorker checkKvServersHealthWorker;
 
 
     public KvBroker() {
@@ -75,9 +78,31 @@ public class KvBroker {
         replicationThresholdSatisfied = new AtomicBoolean();
     }
 
+
+    public void stop() {
+
+        if (!kvServerClientsByContactPoint.isEmpty()) {
+
+            kvServerClientsByContactPoint.forEach((point, client) -> {
+
+                try {
+                    System.out.println("will stop kv-server-client for: " + point);
+                    client.stop();
+                } catch (IOException ignored) {
+                }
+
+            });
+        }
+
+        if (checkKvServersHealthWorker != null) {
+            checkKvServersHealthWorker.interrupt();
+        }
+
+    }
+
     public void start(List<KvServerContactPoint> kvServerContactPoints,
                       BufferedReader dataToIndexBufferedReader,
-                      int replicationFactor) throws NotOkayResponseException, IOException {
+                      int replicationFactor) throws NotOkayResponseException, IOException, ErrorReceivedFromKvServerException {
 
         if (kvServerContactPoints.size() < replicationFactor) {
             throw new IllegalArgumentException("provided kv-server contact points(-s) are less than provided replicationFactor(-k)");
@@ -104,14 +129,13 @@ public class KvBroker {
 
         // Note: now that we have connected to all kv-servers, time to start healthCheck thread-worker, which at a fixed time interval will
         //       check for the availability (is up?) for all the kvServerContactPoints and keep track of the status on a map
-        final CheckKvServersHealthWorker checkKvServersHealthWorker =
-                new CheckKvServersHealthWorker(CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS,
+        checkKvServersHealthWorker = new CheckKvServersHealthWorker(CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS,
 
-                        replicationFactor, replicationThresholdSatisfied,
+                replicationFactor, replicationThresholdSatisfied,
 
-                        kvServerClientsByContactPoint,
-                        kvServerHealthStateStatsByContactPoint, kvServerClientsByServerHealthStateStats
-                );
+                kvServerClientsByContactPoint,
+                kvServerHealthStateStatsByContactPoint, kvServerClientsByServerHealthStateStats
+        );
         checkKvServersHealthWorker.setName("checkServersHealthWorker");
         checkKvServersHealthWorker.setDaemon(false);
         checkKvServersHealthWorker.start();
@@ -124,14 +148,21 @@ public class KvBroker {
 
 
         // Note: now is time for each line of generated data to randomly pick k(replicationFactor) servers and send a request of the form PUT data.
-        sendGeneratedDate(dataToIndexBufferedReader, replicationFactor);
+        sendGeneratedData(dataToIndexBufferedReader, replicationFactor);
 
+
+        // Note: give some time to checkKvServersHealthWorker to run.
+        try {
+            Thread.sleep(700);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
 
         System.out.println("start method finished...");
     }
 
     // todo get
-
 
     public boolean getReplicationThresholdSatisfied() {
         boolean r = replicationThresholdSatisfied.get();
@@ -141,24 +172,84 @@ public class KvBroker {
         return r;
     }
 
-    public boolean put(String key, String value, ConsistencyLevel consistencyLevel) {
-        //TODO
+    public void put(String key, String value, ConsistencyLevel consistencyLevel) throws KvServerAvailabilityException, IOException, ErrorReceivedFromKvServerException {
 
         if (consistencyLevel == ConsistencyLevel.ONE) {
 
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r == null || r.isEmpty()) {
+                throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
+            }
+
+            final Pair<KvServerClient, KvServerContactPoint> selection = SetUtils.pickOneRandomly(r);
+
+            System.out.println("will execute put operation against kv-server: " + selection.getValue1());
+
+            final KvServerClient client = selection.getValue0();
+            putOperation(client, key, value);
 
         } else if (consistencyLevel == ConsistencyLevel.ALL) {
 
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r == null || r.isEmpty()) {
+                throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
+            }
+
+            if (kvServerClientsByContactPoint.size() != r.size()) {
+                throw new NotAllKvServersAreUpException("only: " + r.size() + " servers are up, which you have registered: " + kvServerClientsByContactPoint.size() + " in total");
+            }
+
+            for (Pair<KvServerClient, KvServerContactPoint> selection : r) {
+
+                System.out.println("will execute put operation against kv-server: " + selection.getValue1());
+
+                KvServerClient client = selection.getValue0();
+                putOperation(client, key, value);
+            }
 
 
         } else if (consistencyLevel == ConsistencyLevel.QUORUM) {
 
+            final int quorum = ConsistencyLevel.calculateQuorum(this.replicationFactor);
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r == null || r.isEmpty()) {
+                throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
+            }
+
+            if (r.size() < quorum) {
+                throw new QuorumNotApplicableException("quorum: " + quorum + " for replicationFactor: " + replicationFactor + " is not applicable, due to limited up servers: " + r.size());
+            }
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> selected = SetUtils.pickN(quorum, r);
+
+            for (Pair<KvServerClient, KvServerContactPoint> s : selected) {
+                System.out.println("will execute put operation against kv-server: " + s.getValue1());
+
+                KvServerClient client = s.getValue0();
+                putOperation(client, key, value);
+            }
+
+        } else if (consistencyLevel == ConsistencyLevel.REPLICATION_FACTOR) {
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+
+            if (!this.getReplicationThresholdSatisfied()) {
+                throw new ReplicationFactorNotApplicableException("replication factor: " + replicationFactor + " is not satisfied");
+            }
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> selected = SetUtils.pickN(replicationFactor, r);
+
+            for (Pair<KvServerClient, KvServerContactPoint> s : selected) {
+                System.out.println("will execute put operation against kv-server: " + s.getValue1());
+
+                KvServerClient client = s.getValue0();
+                putOperation(client, key, value);
+            }
 
         } else {
-            throw new IllegalStateException();
+            throw new IllegalStateException("consistency level provided not supported!");
         }
-
-        throw new UnsupportedOperationException("TODO");
     }
 
     public boolean delete(String key, ConsistencyLevel consistencyLevel) {
@@ -207,7 +298,7 @@ public class KvBroker {
         }
     }
 
-    private void sendGeneratedDate(BufferedReader dataToIndexBufferedReader, int replicationFactor) throws IOException {
+    private void sendGeneratedData(BufferedReader dataToIndexBufferedReader, int replicationFactor) throws IOException, ErrorReceivedFromKvServerException {
         if (dataToIndexBufferedReader == null) {
             InputStream in = this.getClass().getResourceAsStream("/sampleDataToIndex.txt");
             dataToIndexBufferedReader = new BufferedReader(new InputStreamReader(in));
@@ -239,8 +330,14 @@ public class KvBroker {
         }
     }
 
-    private void putOperation(KvServerClient kvServerClient, String key, String value) throws IOException {
+    private void putOperation(KvServerClient kvServerClient, String key, String value) throws IOException, ErrorReceivedFromKvServerException {
         System.out.println("will put key: " + key + " --- value: " + value);
-        kvServerClient.sendMessage(Operations.PUT.getMsgOp() + " " + key + ": " + value);
+
+        final String response = kvServerClient.sendMessage(Operations.PUT.getMsgOp() + " " + key + ": " + value);
+
+        if (!ProtocolConstants.OKAY_RESP.equals(response)) {
+            throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response);
+        }
     }
+
 }

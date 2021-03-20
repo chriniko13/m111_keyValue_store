@@ -13,16 +13,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * The purpose of this worker-thread is to hit at a fixed time interval (consistency gap) all the
  * servers connected to the broker and extract their health state, and group them accordingly (UP, DOWN, NOT_OKAY).
- *
- *
+ * <p>
+ * <p>
  * Moreover it checks if replicationFactor policy is satisfied, for example if replicationFactor(k) == 3 and we have
  * 5 servers running, but 2 of them are in DOWN or in NOT_OKAY state then replicationFactor is satisfied.
- *
+ * <p>
  * If replicationFactor(k) == 4 and we have
  * 5 servers running, but 3 of them are in DOWN or in NOT_OKAY state then replicationFactor is NOT satisfied (because only 2 are UP,
  * so we will replicate to 2 instead of 4).
- *
- *
  */
 public class CheckKvServersHealthWorker extends Thread {
 
@@ -84,7 +82,6 @@ public class CheckKvServersHealthWorker extends Thread {
                 break;
             }
 
-            kvServerClientsByServerHealthStateStats.clear();
 
             // Note: time to maintain the state of each server connected to broker (is up? is down? is not_okay? etc...)
             kvServerClientsByContactPoint.forEach((kvServerContactPoint, kvServerClient) -> {
@@ -113,6 +110,33 @@ public class CheckKvServersHealthWorker extends Thread {
 
 
                     // ----
+                    if (kvServerHealthState == KvServerHealthState.UP) {
+                        // note: maintain valid state.
+
+                        Set<Pair<KvServerClient, KvServerContactPoint>> t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.DOWN);
+                        if (t != null) {
+                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                        }
+
+                        t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.NOT_OKAY);
+                        if (t != null) {
+                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                        }
+
+
+                    } else if (kvServerHealthState == KvServerHealthState.NOT_OKAY) {
+                        // note: maintain valid state.
+                        Set<Pair<KvServerClient, KvServerContactPoint>> t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.DOWN);
+                        if (t != null) {
+                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                        }
+
+                        t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+                        if (t != null) {
+                            t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                        }
+                    }
+
                     kvServerClientsByServerHealthStateStats.compute(kvServerHealthState, (k, v) -> {
                         if (v == null) {
                             v = ConcurrentHashMap.newKeySet();
@@ -139,6 +163,17 @@ public class CheckKvServersHealthWorker extends Thread {
 
 
                     // ----
+                    // note: maintain valid state.
+                    Set<Pair<KvServerClient, KvServerContactPoint>> t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+                    if (t != null) {
+                        t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                    }
+
+                    t = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.NOT_OKAY);
+                    if (t != null) {
+                        t.remove(Pair.with(kvServerClient, kvServerContactPoint));
+                    }
+
                     kvServerClientsByServerHealthStateStats.compute(KvServerHealthState.DOWN, (k, v) -> {
                         if (v == null) {
                             v = ConcurrentHashMap.newKeySet();
@@ -147,7 +182,6 @@ public class CheckKvServersHealthWorker extends Thread {
 
                         return v;
                     });
-                    // TODO in case it is down we should replace also the KvServerClient in kvServerClientsByContactPoint
 
                 }
             });
@@ -157,7 +191,7 @@ public class CheckKvServersHealthWorker extends Thread {
             final Set<Pair<KvServerClient, KvServerContactPoint>> serversWithAppStatus
                     = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
 
-            if (serversWithAppStatus.isEmpty()) {
+            if (serversWithAppStatus == null || serversWithAppStatus.isEmpty()) {
                 System.out.println("not at least one server is up....infra is critical");
 
             } else {

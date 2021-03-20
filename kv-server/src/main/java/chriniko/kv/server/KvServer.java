@@ -19,6 +19,8 @@ public class KvServer {
     private final KvParser kvParser;
     private final KvStorageEngine kvStorageEngine;
 
+    private ServerSocketChannel serverSocket;
+
 
     private KvServer(String serverName, KvParser kvParser, KvStorageEngine kvStorageEngine) {
         this.serverName = serverName;
@@ -30,9 +32,18 @@ public class KvServer {
         return new KvServer(serverName, new KvParser(),  new KvStorageEngine());
     }
 
+    public void stop() {
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
     public void run(String hostname, int port, Runnable callbackToExecuteWhenServerIsUp) throws IOException {
 
-        final ServerSocketChannel serverSocket = ServerSocketChannel.open(); // Creating the server on port 8080
+        serverSocket = ServerSocketChannel.open();
 
         // Binding this server on the port
         InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
@@ -137,26 +148,6 @@ public class KvServer {
         } catch (IOException ignored) {
             System.err.println("error occurred during close socket: " + ignored);
         }
-    }
-
-
-
-    // TODO left as an example - remove when kv parser implemented...
-    private static void invertCase(final ByteBuffer byteBuffer) {
-        for (int x = 0; x < byteBuffer.limit(); x++) { // read every byte in it.
-            byteBuffer.put(x, (byte) invertCase(byteBuffer.get(x)));
-        }
-    }
-
-    // TODO left as an example - remove when kv parser implemented...
-    private static int invertCase(final int data) {
-        return Character.isLetter(data) ?
-
-                Character.isUpperCase(data)
-                        ? Character.toLowerCase(data)
-                        : Character.toUpperCase(data) :
-
-                data;
     }
 
     public KvStorageEngine getStorageEngine() {

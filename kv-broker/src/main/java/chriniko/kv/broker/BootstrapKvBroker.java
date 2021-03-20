@@ -1,5 +1,6 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.protocol.ConnectionConstants;
 import chriniko.kv.protocol.NotOkayResponseException;
 
@@ -50,6 +51,13 @@ public class BootstrapKvBroker {
             e.printStackTrace(System.err);
 
             System.exit(-2);
+
+        } catch (ErrorReceivedFromKvServerException e) {
+            System.err.println("kv server error response experienced: " + e.getMessage());
+
+            e.printStackTrace(System.err);
+
+            System.exit(-3);
         }
 
 

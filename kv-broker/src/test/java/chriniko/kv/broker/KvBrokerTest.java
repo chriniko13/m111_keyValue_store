@@ -1,5 +1,6 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.server.KvServer;
 import org.awaitility.Awaitility;
@@ -71,7 +72,7 @@ class KvBrokerTest {
                         null,
                         replicationFactor
                 );
-            } catch (NotOkayResponseException | IOException e) {
+            } catch (NotOkayResponseException | IOException | ErrorReceivedFromKvServerException e) {
                 fail(e);
             }
 
@@ -131,26 +132,165 @@ class KvBrokerTest {
                     assertEquals(replicationFactor, replicationsPerformed);
                 });
 
+
+        // clear
+        kvBroker.stop();
+        kvServer1.stop();
+        kvServer2.stop();
+        kvServer3.stop();
+
     }
 
 
     @Test
-    void getWorksAsExpected() {
+    void putWorksAsExpected() throws Exception {
 
-        // given
+        // given (having started the servers)
+        final CountDownLatch serversReady = new CountDownLatch(3);
 
+        final KvServer kvServer1 = KvServer.create("server1");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer1.run("localhost", 1721, () -> serversReady.countDown());
+            } catch (IOException e) {
+                fail(e);
+            }
+        });
+
+        final KvServer kvServer2 = KvServer.create("server2");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer2.run("localhost", 1722, () -> serversReady.countDown());
+            } catch (IOException e) {
+                fail(e);
+            }
+        });
+
+        final KvServer kvServer3 = KvServer.create("server3");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer3.run("localhost", 1723, () -> serversReady.countDown());
+            } catch (IOException e) {
+                fail(e);
+            }
+        });
+
+
+        boolean reachedZero = serversReady.await(15, TimeUnit.SECONDS);
+        if (!reachedZero) fail("servers could not run!");
+
+
+        // given (start the broker)
+        final int replicationFactor = 2;
+        final KvBroker kvBroker = new KvBroker();
+
+        kvBroker.start(
+                Arrays.asList(
+                        new KvServerContactPoint("localhost", 1721),
+                        new KvServerContactPoint("localhost", 1722),
+                        new KvServerContactPoint("localhost", 1723)
+                ),
+                null,
+                replicationFactor
+        );
+
+
+        // when
+        kvBroker.put("sample-key", "{\"name\": 123}", ConsistencyLevel.ALL);
+
+
+        // then
+        String result = kvServer1.getStorageEngine().fetch("sample-key");
+        assertNotNull(result);
+
+        result = kvServer2.getStorageEngine().fetch("sample-key");
+        assertNotNull(result);
+
+        result = kvServer3.getStorageEngine().fetch("sample-key");
+        assertNotNull(result);
+
+
+        // when
+        kvBroker.put("sample-key2", "{\"name\": 123}", ConsistencyLevel.ONE);
+
+
+        // then
+        int occurrences = 0;
+        result = kvServer1.getStorageEngine().fetch("sample-key2");
+        if (result != null) {
+            occurrences++;
+        }
+
+        result = kvServer2.getStorageEngine().fetch("sample-key2");
+        if (result != null) {
+            occurrences++;
+        }
+
+        result = kvServer3.getStorageEngine().fetch("sample-key2");
+        if (result != null) {
+            occurrences++;
+        }
+
+        assertEquals(1, occurrences);
 
 
 
         // when
-
-
+        kvBroker.put("sample-key3", "{\"name\": 123}", ConsistencyLevel.QUORUM);
 
 
         // then
+        occurrences = 0;
+        result = kvServer1.getStorageEngine().fetch("sample-key3");
+        if (result != null) {
+            occurrences++;
+        }
+
+        result = kvServer2.getStorageEngine().fetch("sample-key3");
+        if (result != null) {
+            occurrences++;
+        }
+
+        result = kvServer3.getStorageEngine().fetch("sample-key3");
+        if (result != null) {
+            occurrences++;
+        }
+
+        assertEquals(2, occurrences);
 
 
+        // when
+        kvBroker.put("sample-key4", "{\"name\": 123}", ConsistencyLevel.REPLICATION_FACTOR);
 
+
+        // then
+        occurrences = 0;
+        result = kvServer1.getStorageEngine().fetch("sample-key4");
+        if (result != null) {
+            occurrences++;
+        }
+
+        result = kvServer2.getStorageEngine().fetch("sample-key4");
+        if (result != null) {
+            occurrences++;
+        }
+
+        result = kvServer3.getStorageEngine().fetch("sample-key4");
+        if (result != null) {
+            occurrences++;
+        }
+
+        assertEquals(2, occurrences);
+
+
+        // clear
+        kvBroker.stop();
+        kvServer1.stop();
+        kvServer2.stop();
+        kvServer3.stop();
     }
+
+
+    // TODO put test consistency levels and if failures work as expected....
 
 }
