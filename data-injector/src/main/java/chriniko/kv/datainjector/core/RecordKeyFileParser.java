@@ -1,6 +1,6 @@
 package chriniko.kv.datainjector.core;
 
-import chriniko.kv.datainjector.type.*;
+import chriniko.kv.datatypes.*;
 import lombok.val;
 
 import java.io.BufferedReader;

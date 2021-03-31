@@ -1,4 +1,4 @@
-package chriniko.kv.datainjector.type;
+package chriniko.kv.datatypes;
 
 public final class StringValue extends Value<String> {
 

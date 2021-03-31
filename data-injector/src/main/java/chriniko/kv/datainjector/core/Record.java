@@ -1,6 +1,6 @@
 package chriniko.kv.datainjector.core;
 
-import chriniko.kv.datainjector.type.Value;
+import chriniko.kv.datatypes.Value;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

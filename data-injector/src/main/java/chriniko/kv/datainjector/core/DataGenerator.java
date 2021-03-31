@@ -1,7 +1,7 @@
 package chriniko.kv.datainjector.core;
 
 import chriniko.kv.datainjector.doc.Nullable;
-import chriniko.kv.datainjector.type.*;
+import chriniko.kv.datatypes.*;
 import com.github.javafaker.Faker;
 import org.apache.commons.lang3.RandomUtils;
 

@@ -1,4 +1,4 @@
-package chriniko.kv.datainjector.type;
+package chriniko.kv.datatypes;
 
 
 import lombok.Getter;
@@ -53,12 +53,6 @@ public abstract class Value<T> {
         return sb.toString();
     }
 
-
-
     public abstract T getValue();
 
 }
-
-//
-//sealed trait Value(k: String, v: Value);
-//case class IntValue()

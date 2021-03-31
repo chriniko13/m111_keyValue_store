@@ -1,6 +1,6 @@
-package chriniko.kv.datainjector.type;
+package chriniko.kv.datatypes;
 
-public final class FloatValue extends Value<Float>{
+public final class FloatValue extends Value<Float> {
 
     private final float value;
 

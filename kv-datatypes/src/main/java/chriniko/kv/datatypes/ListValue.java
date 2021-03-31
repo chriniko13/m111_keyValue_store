@@ -1,4 +1,4 @@
-package chriniko.kv.datainjector.type;
+package chriniko.kv.datatypes;
 
 import java.util.*;
 

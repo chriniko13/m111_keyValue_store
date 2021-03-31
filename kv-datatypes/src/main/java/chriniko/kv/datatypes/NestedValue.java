@@ -1,4 +1,4 @@
-package chriniko.kv.datainjector.type;
+package chriniko.kv.datatypes;
 
 
 import lombok.Setter;
@@ -42,6 +42,7 @@ public final class NestedValue extends Value<Value<?>> {
     public Value<?> getValue() {
         return value;
     }
+
 
     @Override
     public String asString() {

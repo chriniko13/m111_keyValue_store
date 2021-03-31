@@ -1,6 +1,6 @@
 package chriniko.kv.datainjector.core;
 
-import chriniko.kv.datainjector.type.*;
+import chriniko.kv.datatypes.*;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

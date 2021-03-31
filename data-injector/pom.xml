@@ -26,10 +26,10 @@
             <scope>provided</scope>
         </dependency>
 
-
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>org.example</groupId>
+            <artifactId>kv-datatypes</artifactId>
+            <version>${parent.version}</version>
         </dependency>
 
 

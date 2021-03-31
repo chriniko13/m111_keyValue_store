@@ -1,8 +1,6 @@
 package chriniko.kv.datainjector.core;
 
-import chriniko.kv.datainjector.type.ListValue;
-import chriniko.kv.datainjector.type.NestedValue;
-import chriniko.kv.datainjector.type.Value;
+import chriniko.kv.datatypes.*;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;

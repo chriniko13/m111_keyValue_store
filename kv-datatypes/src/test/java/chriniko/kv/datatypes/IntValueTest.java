@@ -1,8 +1,8 @@
-package chriniko.kv.datainjector.type;
+package chriniko.kv.datatypes;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class IntValueTest {
 
