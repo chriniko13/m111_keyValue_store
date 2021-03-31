@@ -22,6 +22,7 @@ class ListValueTest {
         listValue.add(stringValue3);
 
         // then
+        //System.out.println(listValue.asString());
         assertEquals("{\"name\" : \"nikolaos christidis\" ; \"profession\" : \"student\" ; \"age\" : 28" +
                 " ; \"grade\" : 8.5 ; {} ; \"creationTime\" : \"2020/10/5\"}", listValue.asString());
 

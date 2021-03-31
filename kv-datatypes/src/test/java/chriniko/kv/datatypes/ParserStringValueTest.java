@@ -42,8 +42,17 @@ public class ParserStringValueTest {
         assertEquals("grade-class", result.getKey());
         assertEquals("one two three four five six {} {} {{{} } }", result.getValue());
 
-        // TODO
 
+        // when
+        try {
+            Parser.parseString("{\"grade class\" : \"one two three four five six {} {} {{{} } }\"}");
+            fail();
+        } catch (Exception e) {
+            // then
+
+            assertTrue(e instanceof ParsingException);
+            assertEquals("malformed, key contains empty character", e.getMessage());
+        }
 
 
         // when
@@ -64,6 +73,28 @@ public class ParserStringValueTest {
             assertTrue(e instanceof ParsingException);
             assertEquals("malformed, value is not a string type", e.getMessage());
         }
+
+
+        // when
+        try {
+            Parser.parseString("{\"grade-class\" : \"foo-bar;\"}");
+            fail();
+        } catch (Exception e) {
+            // then
+
+            assertTrue(e instanceof IllegalArgumentException);
+            assertEquals("value provided contains a not allowed char ;", e.getMessage());
+        }
+
+
+        // when
+        r = Parser.parseString("\"profession\" : \"student\"", false);
+
+
+        // then
+        assertEquals("profession", r.getKey());
+        assertEquals("student", r.getValue());
+
     }
 
 }

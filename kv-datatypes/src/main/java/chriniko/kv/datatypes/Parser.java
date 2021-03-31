@@ -1,8 +1,32 @@
 package chriniko.kv.datatypes;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+
 public final class Parser {
 
+    private static final Map<Class<? extends Value<?>>, Function<String, Value<?>>> PARSERS_BY_TYPE;
+
+    static {
+        PARSERS_BY_TYPE = new LinkedHashMap<>(); // Note: linked hash map in order to force ordering (higher precedence, etc.)
+
+        PARSERS_BY_TYPE.put(IntValue.class, s -> parseInt(s, false));
+
+        PARSERS_BY_TYPE.put(FloatValue.class, s -> parseFloat(s, false));
+
+        PARSERS_BY_TYPE.put(EmptyValue.class, Parser::parseEmpty);
+
+        PARSERS_BY_TYPE.put(StringValue.class, s -> parseString(s, false));
+    }
+
     public static FloatValue parseFloat(String s) {
+        return parseFloat(s, true);
+    }
+
+    public static FloatValue parseFloat(String s, boolean checkOpenCloseParenthesis) {
         validateInput(s);
 
         boolean openParanthesis = false;
@@ -39,7 +63,7 @@ public final class Parser {
                 // Note: case where key has empty char between
                 throw new ParsingException("malformed, key contains empty character");
 
-            } else if (elem.startsWith("\"") && elem.endsWith("\"")) {
+            } else if (elem.startsWith("\"") && elem.endsWith("\"") && !keyParsed) {
                 key = elem.replace("\"", "");
                 keyParsed = true;
 
@@ -91,21 +115,23 @@ public final class Parser {
 
         }
 
-        _validations(openParanthesis, closeParanthesis, colonFound, keyParsed, valueParsed);
+        _validations(checkOpenCloseParenthesis, openParanthesis, closeParanthesis, colonFound, keyParsed, valueParsed);
 
         return new FloatValue(key, value);
     }
 
     public static EmptyValue parseEmpty(String s) {
-
-        if (s != null) {
+        if (s != null && !"{}".equals(s)) {
             throw new ParsingException("malformed, empty value should be a null or empty string");
         }
-
         return new EmptyValue();
     }
 
     public static IntValue parseInt(String s) {
+        return parseInt(s, true);
+    }
+
+    public static IntValue parseInt(String s, boolean checkOpenCloseParenthesis) {
         validateInput(s);
 
         boolean openParanthesis = false;
@@ -142,7 +168,7 @@ public final class Parser {
                 // Note: case where key has empty char between
                 throw new ParsingException("malformed, key contains empty character");
 
-            } else if (elem.startsWith("\"") && elem.endsWith("\"")) {
+            } else if (elem.startsWith("\"") && elem.endsWith("\"") && !keyParsed) {
                 key = elem.replace("\"", "");
                 keyParsed = true;
 
@@ -194,15 +220,48 @@ public final class Parser {
 
         }
 
-        _validations(openParanthesis, closeParanthesis, colonFound, keyParsed, valueParsed);
+        _validations(checkOpenCloseParenthesis, openParanthesis, closeParanthesis, colonFound, keyParsed, valueParsed);
 
         return new IntValue(key, value);
     }
 
-
     public static ListValue parseList(String s) {
-        //TODO
-        throw new UnsupportedOperationException("TODO");
+        validateInput(s);
+
+        final String[] splittedEntries = s.split(ListValue.SEPARATOR);
+
+        if (splittedEntries.length == 0) {
+            throw new IllegalArgumentException("not valid ListValue");
+        }
+
+        final ArrayList<Value<?>> valuesProcessed = new ArrayList<>(splittedEntries.length);
+
+        for (String splittedEntry : splittedEntries) {
+
+            System.out.println("parseList ==> will parse now: " + splittedEntry);
+
+            boolean parsed = false;
+
+            // try until parsing succeeds
+            for (Function<String, Value<?>> value : PARSERS_BY_TYPE.values()) {
+                try {
+                    final Value<?> result = value.apply(splittedEntry);
+                    parsed = true;
+                    valuesProcessed.add(result);
+                    break;
+                } catch (ParsingException e) {
+                    //System.err.println(e.getMessage());
+                    //e.printStackTrace(System.err);
+                }
+            }
+
+            // if not any parsing succeeds, then fail
+            if (!parsed) {
+                throw new ParsingException("entry inside ListValue was not a known one");
+            }
+        }
+
+        return (ListValue) ListValue.of(valuesProcessed.toArray(new Value[0]));
     }
 
 
@@ -211,9 +270,18 @@ public final class Parser {
         throw new UnsupportedOperationException("TODO");
     }
 
-
     public static StringValue parseString(String s) {
+        return parseString(s, true);
+    }
+
+    public static StringValue parseString(String s, boolean checkOpenCloseParenthesis) {
         validateInput(s);
+
+        for (String notAllowedChar : StringValue.NOT_ALLOWED_CHARS) {
+            if (s.contains(notAllowedChar)) {
+                throw new IllegalArgumentException("value provided contains a not allowed char " + notAllowedChar);
+            }
+        }
 
         boolean openParanthesis = false;
         boolean closeParanthesis = false;
@@ -251,7 +319,8 @@ public final class Parser {
                 // Note: case where key has empty char between
                 throw new ParsingException("malformed, key contains empty character");
 
-            } else if (elem.startsWith("\"") && elem.endsWith("\"")) {
+            } else if (elem.startsWith("\"") && elem.endsWith("\"") && !keyParsed) {
+
                 key = elem.replace("\"", "");
                 keyParsed = true;
 
@@ -278,6 +347,11 @@ public final class Parser {
                 // case of raw value
                 if (keyParsed) {
                     //value = elem;
+
+                    if (!elem.startsWith("\"") && !elem.endsWith("\"")) {
+                        throw new ParsingException("malformed, value is not a string type");
+                    }
+
                     value = s.substring(s.indexOf(elem));
 
                     valueParsed = true;
@@ -295,7 +369,7 @@ public final class Parser {
 
         }
 
-        _validations(openParanthesis, closeParanthesis, colonFound, keyParsed, valueParsed);
+        _validations(checkOpenCloseParenthesis, openParanthesis, closeParanthesis, colonFound, keyParsed, valueParsed);
 
         // drop beginning " and ending "
         if (value.startsWith("\"")) {
@@ -310,15 +384,20 @@ public final class Parser {
 
     // --- infra ---
 
-    private static void _validations(boolean openParanthesis, boolean closeParanthesis,
+    private static void _validations(boolean checkOpenCloseParenthesis, boolean openParanthesis, boolean closeParanthesis,
                                      boolean colonFound, boolean keyParsed,
                                      boolean valueParsed) {
-        if (!openParanthesis) {
-            throw new ParsingException("malformed, open parenthesis is missing");
+
+        if (checkOpenCloseParenthesis) {
+            if (!openParanthesis) {
+                throw new ParsingException("malformed, open parenthesis is missing");
+            }
+            if (!closeParanthesis) {
+                throw new ParsingException("malformed, close parenthesis is missing");
+            }
         }
-        if (!closeParanthesis) {
-            throw new ParsingException("malformed, close parenthesis is missing");
-        }
+
+
         if (!colonFound) {
             throw new ParsingException("malformed, colon(:) is missing");
         }

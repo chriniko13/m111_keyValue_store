@@ -1,11 +1,27 @@
 package chriniko.kv.datatypes;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 public final class StringValue extends Value<String> {
+
+    public static final Set<String> NOT_ALLOWED_CHARS;
+    static {
+        NOT_ALLOWED_CHARS = new LinkedHashSet<>();
+        NOT_ALLOWED_CHARS.add(ListValue.SEPARATOR.trim());
+    }
 
     private final String value;
 
     public StringValue(String key, String value) {
         super(key);
+
+        for (String notAllowedChar : NOT_ALLOWED_CHARS) {
+            if (value.contains(notAllowedChar)) {
+                throw new IllegalArgumentException("value provided contains a not allowed char " + notAllowedChar);
+            }
+        }
+
         this.value = value;
     }
 

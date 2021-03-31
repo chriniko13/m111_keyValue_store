@@ -4,6 +4,8 @@ import java.util.*;
 
 public final class ListValue extends Value<List<Value<?>>> {
 
+    public static final String SEPARATOR = " ; ";
+
     private final List<Value<?>> values;
 
     public ListValue() {
@@ -39,7 +41,7 @@ public final class ListValue extends Value<List<Value<?>>> {
             }
 
             if (i != values.size() - 1) {
-                sb.append(" ; ");
+                sb.append(SEPARATOR);
             }
 
         }
@@ -62,7 +64,7 @@ public final class ListValue extends Value<List<Value<?>>> {
             }
 
             if (i != values.size() - 1) {
-                sb.append(" ; ");
+                sb.append(SEPARATOR);
             }
         }
 
