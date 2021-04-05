@@ -87,7 +87,7 @@ class DataGeneratorTest {
         assertTrue(someValue instanceof NestedValue);
 
         NestedValue nestedValue = (NestedValue) someValue;
-        assertEquals(5, nestedValue.depth());
+        assertEquals(5, nestedValue.maxDepth());
 
         path = dataGenerator.sinkResultsToFile(tempDirectory.toString(), records);
         System.out.println("to see created file check path: " + path);
