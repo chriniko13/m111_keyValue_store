@@ -27,7 +27,7 @@ public final class ListValue extends Value<List<Value<?>>> {
     @Override
     public String asString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("{");
+        sb.append("{ ");
         for (int i = 0; i < values.size(); i++) {
 
             Value<?> value = values.get(i);
@@ -45,7 +45,7 @@ public final class ListValue extends Value<List<Value<?>>> {
             }
 
         }
-        sb.append("}");
+        sb.append(" }");
 
         return sb.toString();
     }
@@ -75,4 +75,6 @@ public final class ListValue extends Value<List<Value<?>>> {
     public List<Value<?>> getValue() {
         return Collections.unmodifiableList(values);
     }
+
+
 }

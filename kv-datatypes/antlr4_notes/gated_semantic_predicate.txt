@@ -1,0 +1,187 @@
+https://stackoverflow.com/questions/7861496/different-lexer-rules-in-different-state
+
+
+
+A little demo:
+freemarker_simple.g
+
+grammar freemarker_simple;
+
+options {
+  output=AST;
+  ASTLabelType=CommonTree;
+}
+
+tokens {
+  FILE;
+  OUTPUT;
+  RAW_BLOCK;
+}
+
+@parser::members {
+
+  // merge a given list of tokens into a single AST
+  private CommonTree merge(List tokenList) {
+    StringBuilder b = new StringBuilder();
+    for(int i = 0; i < tokenList.size(); i++) {
+      Token token = (Token)tokenList.get(i);
+      b.append(token.getText());
+    }
+    return new CommonTree(new CommonToken(RAW, b.toString()));
+  }
+}
+
+@lexer::members {
+  private boolean mmode = false;
+}
+
+parse
+  :  content* EOF -> ^(FILE content*)
+  ;
+
+content
+  :  (options {greedy=true;}: t+=RAW)+ -> ^(RAW_BLOCK {merge($t)})
+  |  if_stat
+  |  output
+  ;
+
+if_stat
+  :  TAG_START IF expression TAG_END raw_block TAG_END_START IF TAG_END -> ^(IF expression raw_block)
+  ;
+
+output
+  :  OUTPUT_START expression OUTPUT_END -> ^(OUTPUT expression)
+  ;
+
+raw_block
+  :  (t+=RAW)* -> ^(RAW_BLOCK {merge($t)})
+  ;
+
+expression
+  :  eq_expression
+  ;
+
+eq_expression
+  :  atom (EQUALS^ atom)*
+  ;
+
+atom
+  :  STRING
+  |  ID
+  ;
+
+// these tokens denote the start of markup code (sets mmode to true)
+OUTPUT_START  : '${'  {mmode=true;};
+TAG_START     : '<#'  {mmode=true;};
+TAG_END_START : '</' ('#' {mmode=true;} | ~'#' {$type=RAW;});
+
+// these tokens denote the end of markup code (sets mmode to false)
+OUTPUT_END    : {mmode}?=> '}' {mmode=false;};
+TAG_END       : {mmode}?=> '>' {mmode=false;};
+
+// valid tokens only when in "markup mode"
+EQUALS        : {mmode}?=> '==';
+IF            : {mmode}?=> 'if';
+STRING        : {mmode}?=> '"' ~'"'* '"';
+ID            : {mmode}?=> ('a'..'z' | 'A'..'Z')+;
+SPACE         : {mmode}?=> (' ' | '\t' | '\r' | '\n')+ {skip();};
+
+RAW           : . ;
+
+which parses your input:
+test.html
+
+${abc}
+<html>
+<head>
+  <title>Welcome!</title>
+</head>
+<body>
+  <h1>
+    Welcome ${user}<#if user == "Big Joe">, our beloved leader</#if>!
+  </h1>
+  <p>Our latest product: <a href="${latestProduct}">${latestProduct}</a>!</p>
+</body>
+</html>
+
+
+
+
+
+Yes, that is correct: ANTLR chooses the longer match in that case.
+
+But now that I (finally :)) see what you're trying to do, here's a last proposal: you could let the RAW rule match characters as long as the rule can't see one of the following character sequences ahead: "<#", "</#" or "${". Note that the rule must still stay at the end in the grammar. This check is performed inside the lexer. Also, in that case you don't need the merge(...) method in the parser:
+
+grammar freemarker_simple;
+
+options {
+  output=AST;
+  ASTLabelType=CommonTree;
+}
+
+tokens {
+  FILE;
+  OUTPUT;
+  RAW_BLOCK;
+}
+
+@lexer::members {
+
+  private boolean mmode = false;
+
+  private boolean rawAhead() {
+    if(mmode) return false;
+    int ch1 = input.LA(1), ch2 = input.LA(2), ch3 = input.LA(3);
+    return !(
+        (ch1 == '<' && ch2 == '#') ||
+        (ch1 == '<' && ch2 == '/' && ch3 == '#') ||
+        (ch1 == '$' && ch2 == '{')
+    );
+  }
+}
+
+parse
+  :  content* EOF -> ^(FILE content*)
+  ;
+
+content
+  :  RAW
+  |  if_stat
+  |  output
+  ;
+
+if_stat
+  :  TAG_START IF expression TAG_END RAW TAG_END_START IF TAG_END -> ^(IF expression RAW)
+  ;
+
+output
+  :  OUTPUT_START expression OUTPUT_END -> ^(OUTPUT expression)
+  ;
+
+expression
+  :  eq_expression
+  ;
+
+eq_expression
+  :  atom (EQUALS^ atom)*
+  ;
+
+atom
+  :  STRING
+  |  ID
+  ;
+
+OUTPUT_START  : '${'  {mmode=true;};
+TAG_START     : '<#'  {mmode=true;};
+TAG_END_START : '</' ('#' {mmode=true;} | ~'#' {$type=RAW;});
+
+OUTPUT_END    : '}' {mmode=false;};
+TAG_END       : '>' {mmode=false;};
+
+EQUALS        : '==';
+IF            : 'if';
+STRING        : '"' ~'"'* '"';
+ID            : ('a'..'z' | 'A'..'Z')+;
+SPACE         : (' ' | '\t' | '\r' | '\n')+ {skip();};
+
+RAW           : ({rawAhead()}?=> . )+;

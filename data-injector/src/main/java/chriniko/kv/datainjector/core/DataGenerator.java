@@ -2,6 +2,7 @@ package chriniko.kv.datainjector.core;
 
 import chriniko.kv.datainjector.doc.Nullable;
 import chriniko.kv.datatypes.*;
+import chriniko.kv.datatypes.infra.SupportedValueTypes;
 import com.github.javafaker.Faker;
 import org.apache.commons.lang3.RandomUtils;
 

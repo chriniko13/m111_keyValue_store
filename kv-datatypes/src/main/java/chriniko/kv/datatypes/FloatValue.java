@@ -13,4 +13,6 @@ public final class FloatValue extends Value<Float> {
     public Float getValue() {
         return value;
     }
+
+
 }

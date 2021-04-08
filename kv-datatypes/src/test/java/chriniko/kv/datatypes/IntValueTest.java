@@ -17,7 +17,7 @@ class IntValueTest {
         String asString = intValue.asString();
 
         // then
-        assertEquals("{\"age\" : 28}", asString);
+        assertEquals("{ \"age\" : 28 }", asString);
         assertEquals("\"age\" : 28", intValue.asStringUnwrapped());
         assertEquals(28, intValue.getValue());
 

@@ -1,0 +1,336 @@
+https://stackoverflow.com/questions/3056441/what-is-a-semantic-predicate-in-antlr
+
+
+ANTLR 3
+
+A semantic predicate is a way to enforce extra (semantic) rules upon grammar actions using plain code.
+
+There are 3 types of semantic predicates:
+
+    validating semantic predicates;
+    gated semantic predicates;
+    disambiguating semantic predicates.
+
+Example grammar
+
+Let's say you have a block of text consisting of only numbers separated by comma's, ignoring any white spaces. You would like to parse this input making sure that the numbers are at most 3 digits "long" (at most 999). The following grammar (Numbers.g) would do such a thing:
+
+grammar Numbers;
+
+// entry point of this parser: it parses an input string consisting of at least
+// one number, optionally followed by zero or more comma's and numbers
+parse
+  :  number (',' number)* EOF
+  ;
+
+// matches a number that is between 1 and 3 digits long
+number
+  :  Digit Digit Digit
+  |  Digit Digit
+  |  Digit
+  ;
+
+// matches a single digit
+Digit
+  :  '0'..'9'
+  ;
+
+// ignore spaces
+WhiteSpace
+  :  (' ' | '\t' | '\r' | '\n') {skip();}
+  ;
+
+Testing
+
+The grammar can be tested with the following class:
+
+import org.antlr.runtime.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ANTLRStringStream in = new ANTLRStringStream("123, 456, 7   , 89");
+        NumbersLexer lexer = new NumbersLexer(in);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        NumbersParser parser = new NumbersParser(tokens);
+        parser.parse();
+    }
+}
+
+Test it by generating the lexer and parser, compiling all .java files and running the Main class:
+
+java -cp antlr-3.2.jar org.antlr.Tool Numbers.g
+javac -cp antlr-3.2.jar *.java
+java -cp .:antlr-3.2.jar Main
+
+When doing so, nothing is printed to the console, which indicates that nothing went wrong. Try changing:
+
+ANTLRStringStream in = new ANTLRStringStream("123, 456, 7   , 89");
+
+into:
+
+ANTLRStringStream in = new ANTLRStringStream("123, 456, 7777   , 89");
+
+and do the test again: you will see an error appearing on the console right after the string 777.
+Semantic Predicates
+
+This brings us to the semantic predicates. Let's say you want to parse numbers between 1 and 10 digits long. A rule like:
+
+number
+  :  Digit Digit Digit Digit Digit Digit Digit Digit Digit Digit
+  |  Digit Digit Digit Digit Digit Digit Digit Digit Digit
+     /* ... */
+  |  Digit Digit Digit
+  |  Digit Digit
+  |  Digit
+  ;
+
+would become cumbersome. Semantic predicates can help simplify this type of rule.
+
+1. Validating Semantic Predicates
+
+A validating semantic predicate is nothing more than a block of code followed by a question mark:
+
+RULE { /* a boolean expression in here */ }?
+
+To solve the problem above using a validating semantic predicate, change the number rule in the grammar into:
+
+number
+@init { int N = 0; }
+  :  (Digit { N++; } )+ { N <= 10 }?
+  ;
+
+The parts { int N = 0; } and { N++; } are plain Java statements of which the first is initialized when the parser "enters" the number rule. The actual predicate is: { N <= 10 }?, which causes the parser to throw a FailedPredicateException whenever a number is more than 10 digits long.
+
+Test it by using the following ANTLRStringStream:
+
+// all equal or less than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,1234567890");
+
+which produces no exception, while the following does thow an exception:
+
+// '12345678901' is more than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,12345678901");
+
+2. Gated Semantic Predicates
+
+A gated semantic predicate is similar to a validating semantic predicate, only the gated version produces a syntax error instead of a FailedPredicateException.
+
+The syntax of a gated semantic predicate is:
+
+{ /* a boolean expression in here */ }?=> RULE
+
+To instead solve the above problem using gated predicates to match numbers up to 10 digits long you would write:
+
+number
+@init { int N = 1; }
+  :  ( { N <= 10 }?=> Digit { N++; } )+
+  ;
+
+Test it again with both:
+
+// all equal or less than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,1234567890");
+
+and:
+
+// '12345678901' is more than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,12345678901");
+
+and you will see the last on will throw an error.
+
+
+
+
+
+ANTLR 4
+
+For predicates in ANTLR 4, checkout these stackoverflow Q&A's:
+
+    Syntax of semantic predicates in Antlr4
+    Semantic predicates in ANTLR4?
+
+ANTLR 3
+
+A semantic predicate is a way to enforce extra (semantic) rules upon grammar actions using plain code.
+
+There are 3 types of semantic predicates:
+
+    validating semantic predicates;
+    gated semantic predicates;
+    disambiguating semantic predicates.
+
+Example grammar
+
+Let's say you have a block of text consisting of only numbers separated by comma's, ignoring any white spaces. You would like to parse this input making sure that the numbers are at most 3 digits "long" (at most 999). The following grammar (Numbers.g) would do such a thing:
+
+grammar Numbers;
+
+// entry point of this parser: it parses an input string consisting of at least
+// one number, optionally followed by zero or more comma's and numbers
+parse
+  :  number (',' number)* EOF
+  ;
+
+// matches a number that is between 1 and 3 digits long
+number
+  :  Digit Digit Digit
+  |  Digit Digit
+  |  Digit
+  ;
+
+// matches a single digit
+Digit
+  :  '0'..'9'
+  ;
+
+// ignore spaces
+WhiteSpace
+  :  (' ' | '\t' | '\r' | '\n') {skip();}
+  ;
+
+Testing
+
+The grammar can be tested with the following class:
+
+import org.antlr.runtime.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ANTLRStringStream in = new ANTLRStringStream("123, 456, 7   , 89");
+        NumbersLexer lexer = new NumbersLexer(in);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        NumbersParser parser = new NumbersParser(tokens);
+        parser.parse();
+    }
+}
+
+Test it by generating the lexer and parser, compiling all .java files and running the Main class:
+
+java -cp antlr-3.2.jar org.antlr.Tool Numbers.g
+javac -cp antlr-3.2.jar *.java
+java -cp .:antlr-3.2.jar Main
+
+When doing so, nothing is printed to the console, which indicates that nothing went wrong. Try changing:
+
+ANTLRStringStream in = new ANTLRStringStream("123, 456, 7   , 89");
+
+into:
+
+ANTLRStringStream in = new ANTLRStringStream("123, 456, 7777   , 89");
+
+and do the test again: you will see an error appearing on the console right after the string 777.
+Semantic Predicates
+
+This brings us to the semantic predicates. Let's say you want to parse numbers between 1 and 10 digits long. A rule like:
+
+number
+  :  Digit Digit Digit Digit Digit Digit Digit Digit Digit Digit
+  |  Digit Digit Digit Digit Digit Digit Digit Digit Digit
+     /* ... */
+  |  Digit Digit Digit
+  |  Digit Digit
+  |  Digit
+  ;
+
+would become cumbersome. Semantic predicates can help simplify this type of rule.
+1. Validating Semantic Predicates
+
+A validating semantic predicate is nothing more than a block of code followed by a question mark:
+
+RULE { /* a boolean expression in here */ }?
+
+To solve the problem above using a validating semantic predicate, change the number rule in the grammar into:
+
+number
+@init { int N = 0; }
+  :  (Digit { N++; } )+ { N <= 10 }?
+  ;
+
+The parts { int N = 0; } and { N++; } are plain Java statements of which the first is initialized when the parser "enters" the number rule. The actual predicate is: { N <= 10 }?, which causes the parser to throw a FailedPredicateException whenever a number is more than 10 digits long.
+
+Test it by using the following ANTLRStringStream:
+
+// all equal or less than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,1234567890");
+
+which produces no exception, while the following does thow an exception:
+
+// '12345678901' is more than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,12345678901");
+
+2. Gated Semantic Predicates
+
+A gated semantic predicate is similar to a validating semantic predicate, only the gated version produces a syntax error instead of a FailedPredicateException.
+
+The syntax of a gated semantic predicate is:
+
+{ /* a boolean expression in here */ }?=> RULE
+
+To instead solve the above problem using gated predicates to match numbers up to 10 digits long you would write:
+
+number
+@init { int N = 1; }
+  :  ( { N <= 10 }?=> Digit { N++; } )+
+  ;
+
+Test it again with both:
+
+// all equal or less than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,1234567890");
+
+and:
+
+// '12345678901' is more than 10 digits
+ANTLRStringStream in = new ANTLRStringStream("1,23,12345678901");
+
+and you will see the last on will throw an error.
+3. Disambiguating Semantic Predicates
+
+The final type of predicate is a disambiguating semantic predicate, which looks a bit like a validating predicate ({boolean-expression}?), but acts more like a gated semantic predicate (no exception is thrown when the boolean expression evaluates to false). You can use it at the start of a rule to check some property of a rule and let the parser match said rule or not.
+
+Let's say the example grammar creates Number tokens (a lexer rule instead of a parser rule) that will match numbers in the range of 0..999. Now in the parser, you'd like to make a distinction between low- and hight numbers (low: 0..500, high: 501..999). This could be done using a disambiguating semantic predicate where you inspect the token next in the stream (input.LT(1)) to check if it's either low or high.
+
+A demo:
+
+grammar Numbers;
+
+parse
+  :  atom (',' atom)* EOF
+  ;
+
+atom
+  :  low  {System.out.println("low  = " + $low.text);}
+  |  high {System.out.println("high = " + $high.text);}
+  ;
+
+low
+  :  {Integer.valueOf(input.LT(1).getText()) <= 500}? Number
+  ;
+
+high
+  :  Number
+  ;
+
+Number
+  :  Digit Digit Digit
+  |  Digit Digit
+  |  Digit
+  ;
+
+fragment Digit
+  :  '0'..'9'
+  ;
+
+WhiteSpace
+  :  (' ' | '\t' | '\r' | '\n') {skip();}
+  ;
+
+If you now parse the string "123, 999, 456, 700, 89, 0", you'd see the following output:
+
+low  = 123
+high = 999
+low  = 456
+high = 700
+low  = 89
+low  = 0
+

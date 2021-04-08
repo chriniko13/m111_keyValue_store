@@ -36,10 +36,10 @@ public abstract class Value<T> {
     public String asString() {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("{")
+        sb.append("{ ")
                 .append("\"").append(key).append("\" : ")
                 .append(getValue())
-                .append("}");
+                .append(" }");
 
         return sb.toString();
     }
@@ -54,5 +54,6 @@ public abstract class Value<T> {
     }
 
     public abstract T getValue();
+
 
 }

@@ -1,5 +1,9 @@
-package chriniko.kv.datatypes;
+package chriniko.kv.datatypes.parser;
 
+import chriniko.kv.datatypes.IntValue;
+import chriniko.kv.datatypes.Value;
+import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.datatypes.parser.DatatypesParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,7 +21,7 @@ public class ParserIntValueTest {
 
 
         // when
-        Value<Integer> result = Parser.parseInt(asString);
+        Value<Integer> result = DatatypesParser.parseInt(asString);
 
 
         // then
@@ -37,7 +41,7 @@ public class ParserIntValueTest {
 
         // when
         try {
-            Parser.parseInt(asString);
+            DatatypesParser.parseInt(asString);
             fail();
         } catch (Exception e) {
             // then
@@ -50,7 +54,7 @@ public class ParserIntValueTest {
 
         // when
         try {
-            Parser.parseInt("{\"grade-class\" : \"foo-bar\"}");
+            DatatypesParser.parseInt("{\"grade-class\" : \"foo-bar\"}");
             fail();
         } catch (Exception e) {
             // then
@@ -62,7 +66,7 @@ public class ParserIntValueTest {
 
         // when
         try {
-            Parser.parseInt("course");
+            DatatypesParser.parseInt("course");
             fail();
         } catch (Exception e) {
             // then

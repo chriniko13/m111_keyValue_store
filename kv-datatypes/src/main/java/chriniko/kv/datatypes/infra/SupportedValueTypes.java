@@ -1,5 +1,6 @@
-package chriniko.kv.datatypes;
+package chriniko.kv.datatypes.infra;
 
+import chriniko.kv.datatypes.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

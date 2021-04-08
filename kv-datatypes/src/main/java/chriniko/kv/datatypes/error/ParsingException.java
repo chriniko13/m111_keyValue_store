@@ -1,4 +1,4 @@
-package chriniko.kv.datatypes;
+package chriniko.kv.datatypes.error;
 
 public class ParsingException extends RuntimeException {
 

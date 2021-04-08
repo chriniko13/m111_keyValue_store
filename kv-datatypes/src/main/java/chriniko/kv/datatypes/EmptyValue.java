@@ -5,6 +5,10 @@ public final class EmptyValue extends Value<Void> {
         super(null);
     }
 
+    public EmptyValue(String key) {
+        super(key);
+    }
+
     @Override
     public String asString() {
         return "{}";
@@ -19,4 +23,6 @@ public final class EmptyValue extends Value<Void> {
     public Void getValue() {
         return null;
     }
+
+
 }

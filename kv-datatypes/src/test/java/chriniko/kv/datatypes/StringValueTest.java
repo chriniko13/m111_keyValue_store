@@ -17,7 +17,7 @@ class StringValueTest {
         String asString = stringValue.asString();
 
         // then
-        assertEquals("{\"name\" : \"nikolaos christidis\"}", asString);
+        assertEquals("{ \"name\" : \"nikolaos christidis\" }", asString);
         assertEquals("\"name\" : \"nikolaos christidis\"", stringValue.asStringUnwrapped());
 
         assertEquals("nikolaos christidis", stringValue.getValue());

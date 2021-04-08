@@ -25,7 +25,7 @@ class RecordTest {
         String s = record.toString();
 
         // then
-        assertEquals("\"mary2021005\" : {\"name\" : \"Mary\" ; \"address\" : {\"street\" : \"Panepistimiou\" ; \"number\" : 12}}", s);
+        assertEquals("\"mary2021005\" : { \"name\" : \"Mary\" ; \"address\" : { \"street\" : \"Panepistimiou\" ; \"number\" : 12 } }", s);
 
     }
 }

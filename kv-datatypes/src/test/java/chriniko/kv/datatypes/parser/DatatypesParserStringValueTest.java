@@ -1,10 +1,14 @@
-package chriniko.kv.datatypes;
+package chriniko.kv.datatypes.parser;
 
+import chriniko.kv.datatypes.StringValue;
+import chriniko.kv.datatypes.Value;
+import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.datatypes.parser.DatatypesParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ParserStringValueTest {
+public class DatatypesParserStringValueTest {
 
     @Test
     void parseWorksAsExpected() {
@@ -17,7 +21,7 @@ public class ParserStringValueTest {
 
 
         // when
-        Value<String> result = Parser.parseString(asString);
+        Value<String> result = DatatypesParser.parseString(asString);
 
 
         // then
@@ -36,7 +40,7 @@ public class ParserStringValueTest {
 
 
         // when
-         result = Parser.parseString(asString);
+         result = DatatypesParser.parseString(asString);
 
         // then
         assertEquals("grade-class", result.getKey());
@@ -45,7 +49,7 @@ public class ParserStringValueTest {
 
         // when
         try {
-            Parser.parseString("{\"grade class\" : \"one two three four five six {} {} {{{} } }\"}");
+            DatatypesParser.parseString("{\"grade class\" : \"one two three four five six {} {} {{{} } }\"}");
             fail();
         } catch (Exception e) {
             // then
@@ -56,7 +60,7 @@ public class ParserStringValueTest {
 
 
         // when
-        result = Parser.parseString("{\"grade-class\" : \"foo-bar\"}");
+        result = DatatypesParser.parseString("{\"grade-class\" : \"foo-bar\"}");
 
         // then
         assertEquals("grade-class", result.getKey());
@@ -65,7 +69,7 @@ public class ParserStringValueTest {
 
         // when
         try {
-            Parser.parseString("course");
+            DatatypesParser.parseString("course");
             fail();
         } catch (Exception e) {
             // then
@@ -77,7 +81,7 @@ public class ParserStringValueTest {
 
         // when
         try {
-            Parser.parseString("{\"grade-class\" : \"foo-bar;\"}");
+            DatatypesParser.parseString("{\"grade-class\" : \"foo-bar;\"}");
             fail();
         } catch (Exception e) {
             // then
@@ -88,7 +92,7 @@ public class ParserStringValueTest {
 
 
         // when
-        r = Parser.parseString("\"profession\" : \"student\"", false);
+        r = DatatypesParser.parseString("\"profession\" : \"student\"", false);
 
 
         // then

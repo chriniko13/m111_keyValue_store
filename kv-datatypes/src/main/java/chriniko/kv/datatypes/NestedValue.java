@@ -3,8 +3,10 @@ package chriniko.kv.datatypes;
 
 import lombok.Setter;
 
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 
 public final class NestedValue extends Value<Value<?>> {
 
@@ -50,9 +52,9 @@ public final class NestedValue extends Value<Value<?>> {
     @Override
     public String asString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("{");
+        sb.append("{ ");
         asStringHelper(sb);
-        sb.append("}");
+        sb.append(" }");
         return sb.toString();
     }
 
@@ -61,6 +63,84 @@ public final class NestedValue extends Value<Value<?>> {
         StringBuilder sb = new StringBuilder();
         asStringHelper(sb);
         return sb.toString();
+    }
+
+    public Set<String> allKeys() {
+
+        final Set<String> r = new LinkedHashSet<>();
+        r.add(this.getKey());
+
+        Value<?> value = getValue();
+
+        final Queue<Value<?>> q = new LinkedList<>();
+
+        while (value != null) {
+
+            if (value instanceof NestedValue) {
+
+                r.add(value.getKey());
+
+                value = ((NestedValue) value).getValue();
+
+            } else if (value instanceof ListValue) {
+
+                ListValue lv = (ListValue) value;
+                q.addAll(lv.getValue());
+
+                value = q.poll();
+
+            } else {
+                r.add(value.getKey());
+
+                if (q.isEmpty()) {
+                    value = null;
+                } else {
+                    value = q.poll();
+                }
+
+            }
+        }
+
+        return r;
+    }
+
+
+    /*
+        Note: flat values ---> all except nestedValue and listValue.
+     */
+    public Set<Value<?>> allFlatValues() {
+        final Set<Value<?>> r = new LinkedHashSet<>();
+
+        Value<?> value = getValue();
+
+        final Queue<Value<?>> q = new LinkedList<>();
+
+        while (value != null) {
+
+            if (value instanceof NestedValue) {
+
+                value = ((NestedValue) value).getValue();
+
+            } else if (value instanceof ListValue) {
+
+                ListValue lv = (ListValue) value;
+                q.addAll(lv.getValue());
+
+                value = q.poll();
+
+            } else {
+                r.add(value);
+
+                if (q.isEmpty()) {
+                    value = null;
+                } else {
+                    value = q.poll();
+                }
+
+            }
+        }
+
+        return r;
     }
 
     public int maxDepth() {
@@ -128,7 +208,7 @@ public final class NestedValue extends Value<Value<?>> {
             // construct string builder correctly
             if (v instanceof NestedValue) {
 
-                sb.append("{").append("\"").append(v.key).append("\" : ");
+                sb.append("{ ").append("\"").append(v.key).append("\" : ");
 
                 opened++;
 
@@ -136,7 +216,7 @@ public final class NestedValue extends Value<Value<?>> {
                 sb.append(v.asString());
 
                 if (opened > 0) {
-                    sb.append("}");
+                    sb.append(" }");
                     opened--;
                 }
             }
@@ -153,8 +233,9 @@ public final class NestedValue extends Value<Value<?>> {
 
         // Note: add remaining closing parenthesis: }
         while (opened > 0) {
-            sb.append("}");
+            sb.append(" }");
             opened--;
         }
     }
+
 }

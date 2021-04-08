@@ -29,11 +29,11 @@ public final class StringValue extends Value<String> {
     public String asString() {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("{")
+        sb.append("{ ")
                 .append("\"").append(key)
                 .append("\" : ")
                 .append("\"").append(getValue()).append("\"")
-                .append("}");
+                .append(" }");
 
         return sb.toString();
     }
@@ -54,4 +54,6 @@ public final class StringValue extends Value<String> {
     public String getValue() {
         return value;
     }
+
+
 }

@@ -124,7 +124,7 @@ public class Trie<T extends TrieEntry> {
                 && current.getChildren().isEmpty();
     }
 
-    // TODO delete with iteration
+    // Note: nice to have ===> delete with iteration [TODO]
 
 
     public List<T> keysWithPrefix(String prefix) {
@@ -188,7 +188,7 @@ public class Trie<T extends TrieEntry> {
 
     }
 
-    //TODO gatherStatisticsWithIteration
+    // Note: nice to have ===> gatherStatisticsWithIteration [TODO]
 
     private void _gatherStatistics(TrieNode<T> current, List<T> values,
                                    int[] countOfNoCompleteWords, int[] countOfCompleteWords) {

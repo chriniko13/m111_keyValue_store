@@ -1,0 +1,43 @@
+
+https://stackoverflow.com/questions/12749230/syntax-of-semantic-predicates-in-antlr4
+https://stackoverflow.com/questions/13661754/semantic-predicates-in-antlr4
+
+
+
+here is now just a single type of semantic predicates, which looks like this:
+
+{ <<boolean-epxression>> }?
+
+And the input attribute from the abstract class Parser (which your generated parser extends from) now has an underscore in front of it.
+
+So, in your case, the following ANTLR v3 syntax:
+
+{input.LT(1).getType() == RBRACE}? =>
+
+would look like this in ANTLR v4:
+
+{_input.LT(1).getType() == RBRACE}?
+
+
+
+
+
+
+
+In ANTLR v4, there are no longer gated semantic predicates, { ... }?=>, and there are also no longer syntactic predicates, ( ... )=>, because the parsing algorithm used in v4 can resolve the ambiguities (the need for such predicates are no longer needed). So, this should just work for you:
+
+expr
+ : refIdentifier
+ | refIdentifier
+ | lambdaExpression
+ ;
+
+Note that there is just one type of predicate in v4: semantic predicates, { ... }?. If you need to inspect the contents of a token, for example, you can do it like this:
+
+id_capitals_only
+ : {_input.LT(1).getText().matches("[A-Z]+")}? ID
+ ;
+
+ID
+ : [a-zA-Z]+
+ ;
