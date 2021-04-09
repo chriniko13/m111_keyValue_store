@@ -14,5 +14,4 @@ public final class FloatValue extends FlatValue<Float> {
         return value;
     }
 
-
 }

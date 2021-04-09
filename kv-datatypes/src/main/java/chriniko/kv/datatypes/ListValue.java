@@ -26,16 +26,17 @@ public final class ListValue extends Value<List<Value<?>>> {
 
     @Override
     public String asString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{ ");
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[ ");
+
         for (int i = 0; i < values.size(); i++) {
 
             Value<?> value = values.get(i);
 
             if (value instanceof NestedValue) {
-                sb.append(value.asStringUnwrapped());
+                sb.append(value.asString());
             } else if (!(value instanceof EmptyValue)) {
-                sb.append(value.asStringUnwrapped());
+                sb.append(value.asString());
             } else {
                 sb.append(value.asString());
             }
@@ -45,20 +46,22 @@ public final class ListValue extends Value<List<Value<?>>> {
             }
 
         }
-        sb.append(" }");
 
+        sb.append(" ]");
         return sb.toString();
     }
 
     @Override
     public String asStringUnwrapped() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < values.size(); i++) {
             Value<?> value = values.get(i);
 
-            if (!(value instanceof EmptyValue)) {
-                sb.append(value.asStringUnwrapped());
+            if (value instanceof NestedValue) {
+                sb.append(value.asString());
+            } else if (!(value instanceof EmptyValue)) {
+                sb.append(value.asString());
             } else {
                 sb.append(value.asString());
             }

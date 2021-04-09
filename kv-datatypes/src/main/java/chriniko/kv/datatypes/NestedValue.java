@@ -51,17 +51,21 @@ public final class NestedValue extends Value<Value<?>> {
 
     @Override
     public String asString() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
+
         sb.append("{ ");
         asStringHelper(sb);
         sb.append(" }");
+
         return sb.toString();
     }
 
     @Override
     public String asStringUnwrapped() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
+
         asStringHelper(sb);
+
         return sb.toString();
     }
 

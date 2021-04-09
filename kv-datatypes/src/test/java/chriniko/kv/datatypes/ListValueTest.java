@@ -25,9 +25,21 @@ class ListValueTest {
 
         // then
         //System.out.println(listValue.asString());
-        assertEquals("{ \"name\" : \"nikolaos christidis\" ; \"profession\" : \"student\" ; \"age\" : 28 ; \"grade\" : 8.5 ; {} ; \"creationTime\" : \"2020/10/5\" ; \"n1\" : { \"n2\" : { \"n3\" : { \"s\" : \"v\" } } } }", listValue.asString());
+        assertEquals("[ { \"name\" : \"nikolaos christidis\" } " +
+                "; { \"profession\" : \"student\" } " +
+                "; { \"age\" : 28 } " +
+                "; { \"grade\" : 8.5 } " +
+                "; {} " +
+                "; { \"creationTime\" : \"2020/10/5\" } " +
+                "; { \"n1\" : { \"n2\" : { \"n3\" : { \"s\" : \"v\" } } } } ]", listValue.asString());
 
-        assertEquals("\"name\" : \"nikolaos christidis\" ; \"profession\" : \"student\" ; \"age\" : 28 ; \"grade\" : 8.5 ; {} ; \"creationTime\" : \"2020/10/5\" ; \"n1\" : { \"n2\" : { \"n3\" : { \"s\" : \"v\" } } }", listValue.asStringUnwrapped());
+        assertEquals("{ \"name\" : \"nikolaos christidis\" } " +
+                "; { \"profession\" : \"student\" } " +
+                "; { \"age\" : 28 } " +
+                "; { \"grade\" : 8.5 } " +
+                "; {} " +
+                "; { \"creationTime\" : \"2020/10/5\" } " +
+                "; { \"n1\" : { \"n2\" : { \"n3\" : { \"s\" : \"v\" } } } }", listValue.asStringUnwrapped());
 
         assertEquals(7, listValue.getValue().size());
 
@@ -39,7 +51,7 @@ class ListValueTest {
         ).asString();
 
         // then
-        assertEquals("{ \"_s1\" : \"v1\" ; \"_s2\" : \"v2\" }", s);
+        assertEquals("[ [ { \"_s1\" : \"v1\" } ] ; { \"_s2\" : \"v2\" } ]", s);
     }
 
 }

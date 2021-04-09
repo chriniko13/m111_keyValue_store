@@ -51,8 +51,8 @@ class NestedValueTest {
 
 
         // then
-        assertEquals("{ \"name\" : \"Mary\" ; \"address\" : { \"street\" : \"Panepistimiou\" ; \"number\" : 12 } }", r.asString());
-        assertEquals("\"name\" : \"Mary\" ; \"address\" : { \"street\" : \"Panepistimiou\" ; \"number\" : 12 }", r.asStringUnwrapped());
+        assertEquals("[ { \"name\" : \"Mary\" } ; { \"address\" : [ { \"street\" : \"Panepistimiou\" } ; { \"number\" : 12 } ] } ]", r.asString());
+        assertEquals("{ \"name\" : \"Mary\" } ; { \"address\" : [ { \"street\" : \"Panepistimiou\" } ; { \"number\" : 12 } ] }", r.asStringUnwrapped());
 
     }
 
@@ -120,7 +120,7 @@ class NestedValueTest {
         // then
         assertEquals(2, result.maxDepth());
 
-        assertEquals("{ \"n1\" : { \"str1\" : \"4\" ; \"n2\" : { \"int2\" : 2 } ; \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } }", result.asString());
+        assertEquals("{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ] }", result.asString());
 
     }
 
@@ -159,7 +159,7 @@ class NestedValueTest {
         assertEquals(2, result.maxDepth());
 
         assertEquals(
-                "{ \"n1\" : { \"str1\" : \"4\" ; \"n2\" : { \"int2\" : 2 } ; \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } ; \"n5\" : { \"float2\" : 2.34 } ; \"n71\" : { \"n72\" : { \"float3\" : 3.34 ; \"float4\" : 4.34 } } } }",
+                "{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [ { \"float3\" : 3.34 } ; { \"float4\" : 4.34 } ] } } ] }",
                 result.asString()
         );
 
@@ -200,7 +200,7 @@ class NestedValueTest {
         assertEquals(2, result.maxDepth());
 
         assertEquals(
-                "{ \"n1\" : { \"str1\" : \"4\" ; \"n2\" : { \"int2\" : 2 } ; \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } ; \"n5\" : { \"float2\" : 2.34 } ; \"n71\" : { \"n72\" : {  } } } }",
+                "{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [  ] } } ] }",
                 result.asString()
         );
 
@@ -257,7 +257,7 @@ class NestedValueTest {
         // then
         assertEquals(4, result.maxDepth());
 
-        assertEquals("{ \"n1\" : { \"str1\" : \"4\" ; \"n2\" : { \"int2\" : 2 } ; \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } ; \"n5\" : { \"float2\" : 2.34 } ; \"n71\" : { \"n72\" : { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } ; \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } } } }", result.asString());
+        assertEquals("{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [ { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } ] } } ] }", result.asString());
 
     }
 
@@ -329,7 +329,7 @@ class NestedValueTest {
         // then
         assertEquals(4, result.maxDepth());
 
-        assertEquals("{ \"n1\" : { \"fn3\" : { \"nf4\" : { \"strTemp\" : \"allGood\" } } ; \"n2\" : { \"int2\" : 2 } ; \"n3\" : { \"gn3\" : { \"gn4\" : { \"gstrTemp\" : \"allGood\" } } ; \"gf1\" : { \"gf2\" : { \"gf3\" : { \"gf4\" : { \"gfString\" : \"gfValue\" } } } } } ; \"n5\" : { \"float2\" : 2.34 } ; \"n71\" : { \"n72\" : { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } ; \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } } } }", result.asString());
+        assertEquals("{ \"n1\" : [ { \"fn3\" : { \"nf4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : [ { \"gn3\" : { \"gn4\" : { \"gstrTemp\" : \"allGood\" } } } ; { \"gf1\" : { \"gf2\" : { \"gf3\" : { \"gf4\" : { \"gfString\" : \"gfValue\" } } } } } ] } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [ { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } ] } } ] }", result.asString());
 
     }
 

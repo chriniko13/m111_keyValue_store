@@ -66,6 +66,20 @@ public class KvDatatypesLogListener extends KvDatatypesBaseListener {
         }
     }
 
+    // --- flat entry
+
+
+    @Override
+    public void enterFlatEntry(KvDatatypesParser.FlatEntryContext ctx) {
+        System.out.println("enterFlatEntry: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void exitFlatEntry(KvDatatypesParser.FlatEntryContext ctx) {
+        System.out.println("exitFlatEntry: " + ctx.getText());
+        System.out.println();
+    }
 
 
     // --- nestedEntry
