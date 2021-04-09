@@ -9,7 +9,7 @@ import org.javatuples.Pair;
 
 import java.util.*;
 
-public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
+public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     @Getter
     private boolean errorOccurred = false;
@@ -34,14 +34,17 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
 
     private ListValue currentListValue;
-    private int currentListMidNodesCounter;
-    private final ArrayDeque<Pair<ListValue, Integer /*total nodes count*/>> listValuesStack = new ArrayDeque<>();
+    private ArrayDeque<Value<?>> processedValuesForCurrentListStack;
+
+    private final ArrayDeque<
+            Pair<ListValue,
+                    ArrayDeque<Value<?>>>
+            > listValuesStack = new ArrayDeque<>();
 
 
     private final ArrayDeque<String> nestedEntriesKeysStack = new ArrayDeque<>();
 
     // ---
-
 
 
     // --- parse
@@ -51,7 +54,7 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
         parsingStarted = true;
 
         if (ctx.ANY() != null) {
-            errorOccurred  = true;
+            errorOccurred = true;
         }
     }
 
@@ -71,6 +74,7 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
             throw new IllegalStateException("!nestedEntriesKeysStack.isEmpty()");
         }
 
+
         // make sure no duplicate keys found (otherwise input is invalid)
         if (processedKeysList.size() != processedKeysSet.size()) {
             Collections.sort(processedKeysList);
@@ -83,7 +87,6 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
             throw new ParsingException("(processedKeysList.size() != processedKeysSet.size()) duplicated keys found - check your input!");
         }
 
-
         // just pop the only one value in stack which is the result
         if (processedValuesStack.size() != 1) {
             throw new IllegalStateException("processedValuesStack.size() != 1");
@@ -91,7 +94,6 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
         result = processedValuesStack.pop();
 
     }
-
 
 
     // --- entry
@@ -105,39 +107,50 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
     }
 
 
-
     // --- nestedEntry
 
     @Override
     public void enterNestedEntry(KvDatatypesParser.NestedEntryContext ctx) {
-        if (ctx != null) {
-           if (ctx.key() != null) {
+        System.out.println("enterNestedEntry");
 
-               String key = ctx.key().getText().replace("\"", "");
-               nestedEntriesKeysStack.push(key);
-               currentKey = null;
-           }
+        if (ctx != null) {
+            if (ctx.key() != null) {
+
+                String key = ctx.key().getText().replace("\"", "");
+                nestedEntriesKeysStack.push(key);
+                currentKey = null;
+            }
         }
     }
 
     @Override
     public void exitNestedEntry(KvDatatypesParser.NestedEntryContext ctx) {
+        System.out.println("exitNestedEntry");
         if (ctx != null) {
 
             // when exiting from nested entry...extract create values and create nesting hierarchy
             if (!nestedEntriesKeysStack.isEmpty()) {
 
                 String key = nestedEntriesKeysStack.pop();
-                Value<?> v = processedValuesStack.pop();
 
-                NestedValue nestedValue = new NestedValue(key, v);
-                processedValuesStack.push(nestedValue);
+                if (currentListValue != null) {
+
+                    Value<?> v = processedValuesForCurrentListStack.pop();
+                    NestedValue nestedValue = new NestedValue(key, v);
+                    processedValuesForCurrentListStack.push(nestedValue);
+
+                } else {
+
+                    Value<?> v = processedValuesStack.pop();
+                    NestedValue nestedValue = new NestedValue(key, v);
+                    processedValuesStack.push(nestedValue);
+                }
+
             } else {
                 throw new IllegalStateException();
             }
         }
     }
-
 
 
     // --- listEntry
@@ -154,28 +167,27 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
     // start
     @Override
     public void enterListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
+        System.out.println("enterListBodyStartNode");
 
         // save state if before exiting from a list value we found another one list value
         if (currentListValue != null) {
-            listValuesStack.push(Pair.with(currentListValue, currentListMidNodesCounter));
+            listValuesStack.push(Pair.with(currentListValue, processedValuesForCurrentListStack));
         }
 
         // re-init for start processing the list
         currentListValue = new ListValue(currentKey);
-        currentListMidNodesCounter = 0;
+        processedValuesForCurrentListStack = new ArrayDeque<>();
     }
 
     @Override
     public void exitListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
-        currentListMidNodesCounter += 1; // plus one for the start node
-        currentListMidNodesCounter += 1; // plus one for the end node
+        System.out.println("exitListBodyStartNode");
 
         // time to pop all processed values and collect them to a list value
-        int count = 0;
         final ArrayDeque<Value<?>> tempStack = new ArrayDeque<>(); // just create a temp stack to maintain the order
 
-        while (count++ < currentListMidNodesCounter) {
-            Value<?> v = processedValuesStack.pop();
+        while (!processedValuesForCurrentListStack.isEmpty()) {
+            Value<?> v = processedValuesForCurrentListStack.pop();
             tempStack.push(v);
         }
 
@@ -188,17 +200,19 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
         // restore state of list value if exists.
         if (!listValuesStack.isEmpty()) {
-            Pair<ListValue, Integer> poppedPair = listValuesStack.pop();
+            Pair<ListValue, ArrayDeque<Value<?>>> popped = listValuesStack.pop();
 
-            currentListValue = poppedPair.getValue0();
-            currentListMidNodesCounter = poppedPair.getValue1();
+            currentListValue = popped.getValue0();
+            processedValuesForCurrentListStack = popped.getValue1();
+
+        } else {
+            currentListValue = null;
         }
     }
 
     // mid
     @Override
     public void enterListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
-        currentListMidNodesCounter++;
     }
 
     @Override
@@ -222,6 +236,8 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     @Override
     public void exitValue(KvDatatypesParser.ValueContext ctx) {
+        System.out.println("exitValue");
+
         if (ctx != null) {
 
             // construct value
@@ -246,14 +262,22 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
             // save value
             if (v != null) {
-                processedValuesStack.push(v);
+
+                if (currentListValue != null) {
+                    // if this value belong to the currently processed list then add it to it's stack
+                    processedValuesForCurrentListStack.push(v);
+                } else {
+                    // otherwise just mark it as processed
+                    processedValuesStack.push(v);
+                }
+
+
                 currentKey = null;
             } else {
                 throw new IllegalStateException();
             }
         }
     }
-
 
 
     // --- key
@@ -277,7 +301,6 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
     }
 
 
-
     // --- newline
     @Override
     public void enterNewline(KvDatatypesParser.NewlineContext ctx) {
@@ -289,12 +312,10 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
     }
 
 
-
     // --- terminal
     @Override
     public void visitTerminal(TerminalNode node) {
     }
-
 
 
     // --- error node

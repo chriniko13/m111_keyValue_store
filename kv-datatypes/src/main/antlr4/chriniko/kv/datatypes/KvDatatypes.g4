@@ -14,9 +14,9 @@ parse:
 ;
 
 
-entry:  listEntry
+entry:  nestedEntry
          | flatEntry
-         | nestedEntry
+         | listEntry
 ;
 
 

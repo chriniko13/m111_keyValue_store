@@ -98,6 +98,4 @@ public final class ListValue extends Value<List<Value<?>>> {
     public List<Value<?>> getValue() {
         return Collections.unmodifiableList(values);
     }
-
-
 }

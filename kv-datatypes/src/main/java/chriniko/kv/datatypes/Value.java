@@ -60,4 +60,9 @@ public abstract class Value<T> {
     public abstract T getValue();
 
 
+    @Override
+    public String toString() {
+        return asString();
+    }
+
 }
