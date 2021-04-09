@@ -41,17 +41,17 @@ class NestedValueTest {
 
         // when - { “name” : “Mary” ; “address” : { “street” : “Panepistimiou” ; “number” : 12 } }
         //        {"name" : "Mary" ; "address" : {"street" : "Panepistimiou" ; "number" : 12}}
-        Value<?> r = ListValue.of(
+        Value<?> r = ListValue.of("_idMary",
                 new StringValue("name", "Mary"),
 
-                new NestedValue("address", ListValue.of(
+                ListValue.of("address",
                         new StringValue("street", "Panepistimiou"),
-                        new IntValue("number", 12)))
+                        new IntValue("number", 12))
         );
 
 
         // then
-        assertEquals("[ { \"name\" : \"Mary\" } ; { \"address\" : [ { \"street\" : \"Panepistimiou\" } ; { \"number\" : 12 } ] } ]", r.asString());
+        assertEquals("{ \"_idMary\" : [ { \"name\" : \"Mary\" } ; { \"address\" : [ { \"street\" : \"Panepistimiou\" } ; { \"number\" : 12 } ] } ] }", r.asString());
         assertEquals("{ \"name\" : \"Mary\" } ; { \"address\" : [ { \"street\" : \"Panepistimiou\" } ; { \"number\" : 12 } ] }", r.asStringUnwrapped());
 
     }
@@ -102,7 +102,7 @@ class NestedValueTest {
         // when
         NestedValue result =
                 new NestedValue("n1",
-                        ListValue.of(
+                        ListValue.of("list",
                                 new StringValue("str1", "4"),
 
                                 new NestedValue("n2",
@@ -120,7 +120,7 @@ class NestedValueTest {
         // then
         assertEquals(2, result.maxDepth());
 
-        assertEquals("{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ] }", result.asString());
+        assertEquals("{ \"n1\" : { \"list\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ] } }", result.asString());
 
     }
 
@@ -130,7 +130,7 @@ class NestedValueTest {
         // when
         NestedValue result =
                 new NestedValue("n1",
-                        ListValue.of(
+                        ListValue.of("list",
                                 new StringValue("str1", "4"),
 
                                 new NestedValue("n2",
@@ -149,7 +149,7 @@ class NestedValueTest {
 
                                 new NestedValue("n71",
                                         new NestedValue("n72",
-                                                ListValue.of(new FloatValue("float3", 3.34F), new FloatValue("float4", 4.34F))
+                                                ListValue.of("grades", new FloatValue("float3", 3.34F), new FloatValue("float4", 4.34F))
                                         )
                                 )
                         )
@@ -159,7 +159,7 @@ class NestedValueTest {
         assertEquals(2, result.maxDepth());
 
         assertEquals(
-                "{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [ { \"float3\" : 3.34 } ; { \"float4\" : 4.34 } ] } } ] }",
+                "{ \"n1\" : { \"list\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : { \"grades\" : [ { \"float3\" : 3.34 } ; { \"float4\" : 4.34 } ] } } } ] } }",
                 result.asString()
         );
 
@@ -171,7 +171,7 @@ class NestedValueTest {
         // when
         NestedValue result =
                 new NestedValue("n1",
-                        ListValue.of(
+                        ListValue.of("someList",
                                 new StringValue("str1", "4"),
 
                                 new NestedValue("n2",
@@ -190,7 +190,7 @@ class NestedValueTest {
 
                                 new NestedValue("n71",
                                         new NestedValue("n72",
-                                                ListValue.of()
+                                                ListValue.of("emptyList")
                                         )
                                 )
                         )
@@ -200,7 +200,7 @@ class NestedValueTest {
         assertEquals(2, result.maxDepth());
 
         assertEquals(
-                "{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [  ] } } ] }",
+                "{ \"n1\" : { \"someList\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : { \"emptyList\" : [  ] } } } ] } }",
                 result.asString()
         );
 
@@ -213,7 +213,7 @@ class NestedValueTest {
         // when
         NestedValue result =
                 new NestedValue("n1",
-                        ListValue.of(
+                        ListValue.of("someList1",
                                 new StringValue("str1", "4"),
 
                                 new NestedValue("n2",
@@ -232,7 +232,7 @@ class NestedValueTest {
 
                                 new NestedValue("n71",
                                         new NestedValue("n72",
-                                                ListValue.of(
+                                                ListValue.of("someList2",
                                                         new NestedValue("n3",
                                                                 new NestedValue("n4",
                                                                         new StringValue("strTemp", "allGood")
@@ -257,7 +257,7 @@ class NestedValueTest {
         // then
         assertEquals(4, result.maxDepth());
 
-        assertEquals("{ \"n1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [ { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } ] } } ] }", result.asString());
+        assertEquals("{ \"n1\" : { \"someList1\" : [ { \"str1\" : \"4\" } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : { \"someList2\" : [ { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } ] } } } ] } }", result.asString());
 
     }
 
@@ -267,7 +267,7 @@ class NestedValueTest {
         // when
         NestedValue result =
                 new NestedValue("n1",
-                        ListValue.of(
+                        ListValue.of("someList",
                                 new NestedValue("fn3",
                                         new NestedValue("nf4",
                                                 new StringValue("strTemp", "allGood")
@@ -278,8 +278,8 @@ class NestedValueTest {
                                         new IntValue("int2", 2)
                                 ),
 
-                                new NestedValue("n3",
-                                        ListValue.of(
+                                new NestedValue("p3",
+                                        ListValue.of("n3List",
                                                 new NestedValue("gn3",
                                                         new NestedValue("gn4",
                                                                 new StringValue("gstrTemp", "allGood")
@@ -304,7 +304,7 @@ class NestedValueTest {
 
                                 new NestedValue("n71",
                                         new NestedValue("n72",
-                                                ListValue.of(
+                                                ListValue.of("listGh",
                                                         new NestedValue("n3",
                                                                 new NestedValue("n4",
                                                                         new StringValue("strTemp", "allGood")
@@ -329,7 +329,7 @@ class NestedValueTest {
         // then
         assertEquals(4, result.maxDepth());
 
-        assertEquals("{ \"n1\" : [ { \"fn3\" : { \"nf4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n2\" : { \"int2\" : 2 } } ; { \"n3\" : [ { \"gn3\" : { \"gn4\" : { \"gstrTemp\" : \"allGood\" } } } ; { \"gf1\" : { \"gf2\" : { \"gf3\" : { \"gf4\" : { \"gfString\" : \"gfValue\" } } } } } ] } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : [ { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } ] } } ] }", result.asString());
+        assertEquals("{ \"n1\" : { \"someList\" : [ { \"fn3\" : { \"nf4\" : { \"strTemp\" : \"allGood\" } } } ; { \"n2\" : { \"int2\" : 2 } } ; { \"p3\" : { \"n3List\" : [ { \"gn3\" : { \"gn4\" : { \"gstrTemp\" : \"allGood\" } } } ; { \"gf1\" : { \"gf2\" : { \"gf3\" : { \"gf4\" : { \"gfString\" : \"gfValue\" } } } } } ] } } ; { \"n5\" : { \"float2\" : 2.34 } } ; { \"n71\" : { \"n72\" : { \"listGh\" : [ { \"n3\" : { \"n4\" : { \"strTemp\" : \"allGood\" } } } ; { \"f1\" : { \"f2\" : { \"f3\" : { \"f4\" : { \"fString\" : \"fValue\" } } } } } ] } } } ] } }", result.asString());
 
     }
 

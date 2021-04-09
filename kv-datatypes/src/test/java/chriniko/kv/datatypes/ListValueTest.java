@@ -19,19 +19,13 @@ class ListValueTest {
         NestedValue nestedValue = new NestedValue("n1", new NestedValue("n2", new NestedValue("n3", new StringValue("s", "v"))));
 
         // when
-        ListValue listValue = (ListValue) ListValue.of(stringValue, stringValue2, intValue, floatValue, emptyValue);
+        ListValue listValue = (ListValue) ListValue.of("list", stringValue, stringValue2, intValue, floatValue, emptyValue);
         listValue.add(stringValue3);
         listValue.add(nestedValue);
 
         // then
         //System.out.println(listValue.asString());
-        assertEquals("[ { \"name\" : \"nikolaos christidis\" } " +
-                "; { \"profession\" : \"student\" } " +
-                "; { \"age\" : 28 } " +
-                "; { \"grade\" : 8.5 } " +
-                "; {} " +
-                "; { \"creationTime\" : \"2020/10/5\" } " +
-                "; { \"n1\" : { \"n2\" : { \"n3\" : { \"s\" : \"v\" } } } } ]", listValue.asString());
+        assertEquals("{ \"list\" : [ { \"name\" : \"nikolaos christidis\" } ; { \"profession\" : \"student\" } ; { \"age\" : 28 } ; { \"grade\" : 8.5 } ; {} ; { \"creationTime\" : \"2020/10/5\" } ; { \"n1\" : { \"n2\" : { \"n3\" : { \"s\" : \"v\" } } } } ] }", listValue.asString());
 
         assertEquals("{ \"name\" : \"nikolaos christidis\" } " +
                 "; { \"profession\" : \"student\" } " +
@@ -45,13 +39,13 @@ class ListValueTest {
 
 
         // when
-        String s = ListValue.of(
-                ListValue.of(new StringValue("_s1", "v1")),
+        String s = ListValue.of("l1",
+                ListValue.of("l2", new StringValue("_s1", "v1")),
                 new StringValue("_s2", "v2")
         ).asString();
 
         // then
-        assertEquals("[ [ { \"_s1\" : \"v1\" } ] ; { \"_s2\" : \"v2\" } ]", s);
+        assertEquals("{ \"l1\" : [ { \"l2\" : [ { \"_s1\" : \"v1\" } ] } ; { \"_s2\" : \"v2\" } ] }", s);
     }
 
 }

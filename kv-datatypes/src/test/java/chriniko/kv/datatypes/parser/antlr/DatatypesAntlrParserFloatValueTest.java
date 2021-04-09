@@ -1,7 +1,6 @@
 package chriniko.kv.datatypes.parser.antlr;
 
 import chriniko.kv.datatypes.FloatValue;
-import chriniko.kv.datatypes.StringValue;
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.error.ParsingException;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;

@@ -15,9 +15,13 @@ public class DatatypesAntlrParserListValueTest {
     void worksAsExpected() {
 
         // when
-        Value<?> r = DatatypesAntlrParser.process("[ { \"_strTemp\" : \"allGood allFine all work\" } " +
+        String s = "{ \"_myList\" : [ { \"_strTemp\" : \"allGood allFine all work\" } " +
                 ";  { \"_float2\" : 2.24 } " +
-                "; { \"_int3\" : 17 } ]");
+                "; { \"_int3\" : 17 } ] }";
+
+        System.out.println(s);
+
+        Value<?> r = DatatypesAntlrParser.process(s);
 
         // then
         assertNotNull(r);

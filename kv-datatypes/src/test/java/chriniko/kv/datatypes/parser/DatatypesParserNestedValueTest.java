@@ -67,7 +67,7 @@ public class DatatypesParserNestedValueTest {
 
 
     @Test
-    void parseWorksAsExpected2() {
+    void parseWorksAsExpectedNotComplexCaseSupported() {
 
 
         // when
@@ -84,41 +84,7 @@ public class DatatypesParserNestedValueTest {
 
 
     @Test
-    void parseWorksAsExpected2_1() {
-
-
-        // when
-        try {
-            DatatypesParser.parseNested("{\"n1\" : {\"fn3\" : {\"nf4\" : {\"strTemp\" : \"allGood\"}} ; \"n2\" : {\"int2\" : 2} ; \"n3\" : {\"gn3\" : {\"gn4\" : {\"gstrTemp\" : \"allGood\"}} ; \"gf1\" : {\"gf2\" : {\"gf3\" : {\"gf4\" : {\"gfString\" : \"gfValue\"}}}}} ; \"n5\" : {\"float2\" : 2.34} ; \"n71\" : {\"n72\" : {\"n3\" : {\"n4\" : {\"strTemp\" : \"allGood\"}} ; \"f1\" : {\"f2\" : {\"f3\" : {\"f4\" : {\"fString\" : \"fValue\"}}}}}}}}");
-            fail();
-        } catch (ParsingException e) {
-
-            // then
-            assertEquals("provided input is a complex case (nested type & listed type), please use parser created from ANTLR4", e.getMessage());
-        }
-
-    }
-
-
-    @Test
-    void parseWorksAsExpected3() {
-
-
-        // when
-        try {
-            DatatypesParser.parseNested("{\"n1\" : {\"str1\" : \"4\" ; \"n2\" : {\"int2\" : 2} ; \"n3\" : {\"n4\" : {\"strTemp\" : \"allGood\"}} ; \"n5\" : {\"float2\" : 2.34} ; \"n71\" : {\"n72\" : {}}}}");
-            fail();
-        } catch (ParsingException e) {
-
-            // then
-            assertEquals("provided input is a complex case (nested type & listed type), please use parser created from ANTLR4", e.getMessage());
-        }
-
-    }
-
-
-    @Test
-    void parseWorksAsExpected4() {
+    void parseWorksAsExpectedNotComplexCaseSupported2() {
 
         // when
         try {

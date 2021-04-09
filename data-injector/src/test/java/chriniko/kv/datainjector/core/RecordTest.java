@@ -10,14 +10,13 @@ class RecordTest {
     @Test
     void constructWorksAsExpected() {
 
-        // when - { “name” : “Mary” ; “address” : { “street” : “Panepistimiou” ; “number” : 12 } }
-        //        {"name" : "Mary" ; "address" : {"street" : "Panepistimiou" ; "number" : 12}}
-        Value<?> r = ListValue.of(
+        // when
+        Value<?> r = ListValue.of("studDetails",
                 new StringValue("name", "Mary"),
 
-                new NestedValue("address", ListValue.of(
+                ListValue.of("address",
                         new StringValue("street", "Panepistimiou"),
-                        new IntValue("number", 12)))
+                        new IntValue("number", 12))
         );
 
         Record record = new Record("mary2021005", r);

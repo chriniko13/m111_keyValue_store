@@ -325,7 +325,7 @@ public final class DatatypesParser {
             }
         }
 
-        return (ListValue) ListValue.of(valuesProcessed.toArray(new Value[0]));
+        return (ListValue) ListValue.of("_list", valuesProcessed.toArray(new Value[0]));
     }
 
     /*

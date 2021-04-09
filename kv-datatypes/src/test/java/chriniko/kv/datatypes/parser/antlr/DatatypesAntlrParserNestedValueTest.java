@@ -40,7 +40,7 @@ public class DatatypesAntlrParserNestedValueTest {
 
 
         // when
-        r = DatatypesAntlrParser.process("{ \"_address\" : { \"_address\" : { \"_address\" : { \"_more-details\" : { \"_number\" : 27 } } } } }");
+        r = DatatypesAntlrParser.process("{ \"_address1\" : { \"_address2\" : { \"_address3\" : { \"_more-details\" : { \"_number\" : 27 } } } } }");
 
         // then
         assertNotNull(r);
@@ -56,11 +56,11 @@ public class DatatypesAntlrParserNestedValueTest {
         assertTrue(((Value<?>) nestedValue.getValue().getValue()).getValue() instanceof NestedValue);
         assertTrue(((Value<?>) ((Value<?>) nestedValue.getValue().getValue()).getValue()).getValue() instanceof IntValue);
 
-        assertEquals("_address", nestedValue.getKey());
+        assertEquals("_address1", nestedValue.getKey());
 
         assertEquals(Set.of(27), nestedValue.allFlatValues().stream().map(Value::getValue).collect(Collectors.toSet()));
 
-        assertEquals(Set.of("_address", "_more-details", "_number"), nestedValue.allKeys());
+        assertEquals(Set.of("_address1", "_address2", "_address3", "_more-details", "_number"), nestedValue.allKeys());
 
     }
 

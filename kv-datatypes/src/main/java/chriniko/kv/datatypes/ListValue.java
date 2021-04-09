@@ -8,14 +8,22 @@ public final class ListValue extends Value<List<Value<?>>> {
 
     private final List<Value<?>> values;
 
+    public ListValue(String key) {
+        super(key);
+        values = new LinkedList<>();
+    }
+
+    //todo throw it away...
     public ListValue() {
         super(null);
         values = new LinkedList<>();
     }
 
-    public static Value<?> of(Value<?>... elems) {
+    public static Value<?> of(String key, Value<?>... elems) {
+        Objects.requireNonNull(key, "key should not be null");
         Objects.requireNonNull(elems, "elems should not be null");
-        final ListValue listValue = new ListValue();
+
+        final ListValue listValue = new ListValue(key);
         listValue.values.addAll(Arrays.asList(elems));
         return listValue;
     }
@@ -27,6 +35,12 @@ public final class ListValue extends Value<List<Value<?>>> {
     @Override
     public String asString() {
         final StringBuilder sb = new StringBuilder();
+
+        // todo throw it away when ctor removed
+        if (key != null) {
+            sb.append("{ ").append("\"").append(key).append("\"").append(" : ");
+        }
+
         sb.append("[ ");
 
         for (int i = 0; i < values.size(); i++) {
@@ -48,6 +62,12 @@ public final class ListValue extends Value<List<Value<?>>> {
         }
 
         sb.append(" ]");
+
+        // todo throw it away when ctor removed
+        if (key != null) {
+            sb.append(" }");
+        }
+
         return sb.toString();
     }
 

@@ -40,10 +40,6 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     private final ArrayDeque<String> nestedEntriesKeysStack = new ArrayDeque<>();
 
-
-    private final ArrayDeque<String> keysForListToTransformToNested = new ArrayDeque<>();
-
-
     // ---
 
 
@@ -63,6 +59,9 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
     public void exitParse(KvDatatypesParser.ParseContext ctx) {
         parseFinished = true;
 
+        if (errorOccurred) {
+            return;
+        }
 
         // make sure processing finished.
         if (!listValuesStack.isEmpty()) {
@@ -71,10 +70,6 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
         if (!nestedEntriesKeysStack.isEmpty()) {
             throw new IllegalStateException("!nestedEntriesKeysStack.isEmpty()");
         }
-        if (!keysForListToTransformToNested.isEmpty()) {
-            throw new IllegalStateException("!keysForListToTransformToNested.isEmpty()");
-        }
-
 
         // make sure no duplicate keys found (otherwise input is invalid)
         if (processedKeysList.size() != processedKeysSet.size()) {
@@ -113,21 +108,14 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     // --- nestedEntry
 
-    private boolean justEnteredNestedEntry = false;
-
     @Override
     public void enterNestedEntry(KvDatatypesParser.NestedEntryContext ctx) {
         if (ctx != null) {
            if (ctx.key() != null) {
 
-               // if we are on a list entry node and it's value was a nested entry...save the key
-               if (currentKey != null) {
-                   nestedEntriesKeysStack.push(currentKey);
-               }
-
                String key = ctx.key().getText().replace("\"", "");
                nestedEntriesKeysStack.push(key);
-               justEnteredNestedEntry = true;
+
            }
         }
     }
@@ -163,32 +151,20 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     // start
     @Override
-    public void enterListEntryStartNode(KvDatatypesParser.ListEntryStartNodeContext ctx) {
+    public void enterListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
 
         // save state if before exiting from a list value we found another one list value
         if (currentListValue != null) {
             listValuesStack.push(Pair.with(currentListValue, currentListMidNodesCounter));
         }
 
-        /*
-            Be careful what key we add in order to handle the strange case with nested value entry
-            inside list value, check comment also with: [NOTE#1]
-         */
-        if (currentKey != null) {
-            if (nestedEntriesKeysStack.contains(currentKey)) {
-                System.out.println("STACK ALREADY CONTAINS KEY: " + currentKey);
-            } else {
-                keysForListToTransformToNested.push(currentKey);
-            }
-        }
-
         // re-init for start processing the list
-        currentListValue = new ListValue();
+        currentListValue = new ListValue(currentKey);
         currentListMidNodesCounter = 0;
     }
 
     @Override
-    public void exitListEntryStartNode(KvDatatypesParser.ListEntryStartNodeContext ctx) {
+    public void exitListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
         currentListMidNodesCounter += 1; // plus one for the start node
         currentListMidNodesCounter += 1; // plus one for the end node
 
@@ -205,24 +181,7 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
             currentListValue.add(tempStack.pop());
         }
 
-
-
-        /*
-            [NOTE#1]
-
-            this workaround is necessary due to not elegant grammar for supporting list values, something like: [ {...} ; {...} ... ] would be better.
-
-             if we need to fix case: "_nf2N" (list value which should be transformed to nested value)
-             example: { "_int1" : 2 ; "_int2" : 234 ; "_nf2N" : { "_int1N" : 2 ; "_int2N" : 234 } }
-         */
-        if (!keysForListToTransformToNested.isEmpty()) {
-            String k = keysForListToTransformToNested.pop();
-            NestedValue nestedValue = new NestedValue(k, currentListValue);
-            processedValuesStack.push(nestedValue);
-        } else {
-            processedValuesStack.push(currentListValue);
-        }
-
+        processedValuesStack.push(currentListValue);
 
 
         // restore state of list value if exists.
@@ -236,21 +195,21 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     // mid
     @Override
-    public void enterListEntryMidNode(KvDatatypesParser.ListEntryMidNodeContext ctx) {
+    public void enterListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
         currentListMidNodesCounter++;
     }
 
     @Override
-    public void exitListEntryMidNode(KvDatatypesParser.ListEntryMidNodeContext ctx) {
+    public void exitListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
     }
 
     // end
     @Override
-    public void enterListEntryEndNode(KvDatatypesParser.ListEntryEndNodeContext ctx) {
+    public void enterListBodyEndNode(KvDatatypesParser.ListBodyEndNodeContext ctx) {
     }
 
     @Override
-    public void exitListEntryEndNode(KvDatatypesParser.ListEntryEndNodeContext ctx) {
+    public void exitListBodyEndNode(KvDatatypesParser.ListBodyEndNodeContext ctx) {
     }
 
     // --- value
@@ -305,16 +264,12 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
     public void exitKey(KvDatatypesParser.KeyContext ctx) {
         if (ctx != null) {
 
-            if (justEnteredNestedEntry) {
-                justEnteredNestedEntry = false;
-            } else {
-                currentKey = ctx.getText();
-                currentKey = currentKey.replace("\"", "");
+            currentKey = ctx.getText();
+            currentKey = currentKey.replace("\"", "");
 
-                // tracked processed keys to identify if any duplicates exist
-                processedKeysList.add(currentKey);
-                processedKeysSet.add(currentKey);
-            }
+            // tracked processed keys to identify if any duplicates exist
+            processedKeysList.add(currentKey);
+            processedKeysSet.add(currentKey);
 
         }
     }

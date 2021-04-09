@@ -10,17 +10,21 @@ grammar KvDatatypes;
 
 parse:
     entry
-    | listEntry
     | ANY {System.err.println("unknown char: " + $ANY.text);}
 ;
 
 
-entry:  nestedEntry    // nested type case
+entry:  listEntry
          | flatEntry
+         | nestedEntry
 ;
 
 
 key: ID
+;
+
+
+listEntry: '{' key ':' listBody '}'
 ;
 
 
@@ -32,21 +36,19 @@ nestedEntry: '{' key ':' entry '}'
 ;
 
 
-listEntry
-: {entered=true;}               listEntryStartNode
-    | {entered}?                 listEntryMidNode
-    | {entered=false;}           listEntryEndNode
+
+listBody
+: {entered=true;}               listBodyStartNode
+    | {entered}?                 listBodyMidNode
+    | {entered=false;}           listBodyEndNode
 ;
 
 
-
-listEntryStartNode: '[' entry ';' listEntry
+listBodyStartNode: '[' entry ';' listBody
 ;
-
-listEntryMidNode: entry ';' listEntry
+listBodyMidNode: entry ';' listBody
 ;
-
-listEntryEndNode: entry ']'
+listBodyEndNode: entry ']'
 ;
 
 
