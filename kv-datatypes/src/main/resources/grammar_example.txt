@@ -1,1 +1,1 @@
-{ "_fn3" : { "_nf4" : { "_strTemp" : "allGood allFine all work" } } }
+{ "_strTemp" : "allGood allFine all work" ;  "_strTemp2" : "allGood2 allFine all work" ; "_strTemp3" : "allGood allFine all work" }

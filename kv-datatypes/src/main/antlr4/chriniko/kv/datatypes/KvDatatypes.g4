@@ -14,33 +14,41 @@ parse:
 ;
 
 
-key: ID
-;
-
-
 entry:     '{' key ':' value '}'
          | nestedEntry  // nested type case
          | listEntry    // list type case
 ;
 
+
+key: ID
+;
+
+
 nestedEntry: '{' key ':' entry '}'
 ;
 
 
+
 listEntry
-: {entered=true;}                     '{' key ':' value ';' listEntry
-    | {entered=true;}                 '{' key ':' entry ';' listEntry
-
-    | {entered}?                          key ':' value ';' listEntry
-    | {entered}?                          key ':' entry ';' listEntry
-
-
-    | {entered=false;}                    key ':' value '}'
-    | {entered=false;}                    key ':' entry '}'
+: {entered=true;}               listEntryStartNode
+    | {entered}?                 listEntryMidNode
+    | {entered=false;}           listEntryEndNode
 
 ;
 
 
+
+listEntryStartNode: '{' key ':' value ';' listEntry
+                | '{' key ':' entry ';' listEntry
+;
+
+listEntryMidNode: key ':' value ';' listEntry
+                | key ':' entry ';' listEntry
+;
+
+listEntryEndNode: key ':' value '}'
+                |  key ':' entry '}'
+;
 
 
 value: StringValue

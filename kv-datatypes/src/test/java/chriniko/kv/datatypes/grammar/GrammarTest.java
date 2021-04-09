@@ -27,8 +27,8 @@ class GrammarTest {
 
         ParseTreeWalker walker = new ParseTreeWalker();
 
-        KvDatatypesListener kvDatatypesListener = new KvDatatypesListener();
-        walker.walk(kvDatatypesListener, kvDatatypesParser.entry());
+        KvDatatypesLogListener kvDatatypesLogListener = new KvDatatypesLogListener();
+        walker.walk(kvDatatypesLogListener, kvDatatypesParser.entry());
 
 
         /*

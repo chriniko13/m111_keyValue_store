@@ -28,11 +28,14 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     private String currentKey;
     private ListValue currentListValue;
+    private int currentListMidNodesCounter;
 
 
     private final ArrayDeque<String> nestedEntriesKeysStack = new ArrayDeque<>();
 
     // ---
+
+
 
     // --- parse
 
@@ -50,29 +53,23 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
         parseFinished = true;
 
         if (!valuesStack.isEmpty()) {
-
-            Value<?> pop = valuesStack.pop();
-
-            // todo modify accordingly for nested...
-
-            result = pop;
+            result = valuesStack.pop();
         }
     }
+
+
 
     // --- entry
 
     @Override
     public void enterEntry(KvDatatypesParser.EntryContext ctx) {
-
-
-
     }
 
     @Override
     public void exitEntry(KvDatatypesParser.EntryContext ctx) {
-
-
     }
+
+
 
     // --- nestedEntry
 
@@ -101,19 +98,63 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
     }
 
+
+
     // --- listEntry
 
     @Override
     public void enterListEntry(KvDatatypesParser.ListEntryContext ctx) {
-        // todo
-        if (ctx != null) {
-            //ctx.
-        }
     }
 
     @Override
     public void exitListEntry(KvDatatypesParser.ListEntryContext ctx) {
-        // todo
+    }
+
+
+    // start
+    @Override
+    public void enterListEntryStartNode(KvDatatypesParser.ListEntryStartNodeContext ctx) {
+        currentListValue = new ListValue();
+        currentListMidNodesCounter = 0;
+    }
+
+    @Override
+    public void exitListEntryStartNode(KvDatatypesParser.ListEntryStartNodeContext ctx) {
+        currentListMidNodesCounter++;
+
+        // time to pop all processed values and collect them to a list value
+        int count = 0;
+        final ArrayDeque<Value<?>> tempStack = new ArrayDeque<>(); // just create a temp stack to maintain the order
+        while (count++ < currentListMidNodesCounter) {
+            Value<?> v = valuesStack.pop();
+            tempStack.push(v);
+        }
+
+        while (!tempStack.isEmpty()) {
+            currentListValue.add(tempStack.pop());
+        }
+
+        valuesStack.push(currentListValue);
+    }
+
+    // mid
+    @Override
+    public void enterListEntryMidNode(KvDatatypesParser.ListEntryMidNodeContext ctx) {
+        currentListMidNodesCounter++;
+    }
+
+    @Override
+    public void exitListEntryMidNode(KvDatatypesParser.ListEntryMidNodeContext ctx) {
+    }
+
+    // end
+    @Override
+    public void enterListEntryEndNode(KvDatatypesParser.ListEntryEndNodeContext ctx) {
+    }
+
+    @Override
+    public void exitListEntryEndNode(KvDatatypesParser.ListEntryEndNodeContext ctx) {
+        currentListMidNodesCounter++;
     }
 
     // --- value
@@ -153,6 +194,8 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
         }
     }
+
+
 
     // --- key
 

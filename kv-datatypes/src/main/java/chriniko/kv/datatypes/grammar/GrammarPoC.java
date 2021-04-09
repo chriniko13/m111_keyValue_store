@@ -24,8 +24,8 @@ public class GrammarPoC {
 
         ParseTreeWalker walker = new ParseTreeWalker();
 
-        KvDatatypesListener kvDatatypesListener = new KvDatatypesListener();
-        walker.walk(kvDatatypesListener, kvDatatypesParser.parse());
+        KvDatatypesLogListener kvDatatypesLogListener = new KvDatatypesLogListener();
+        walker.walk(kvDatatypesLogListener, kvDatatypesParser.parse());
 
 
     }

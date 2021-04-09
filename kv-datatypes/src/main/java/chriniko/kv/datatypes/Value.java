@@ -30,6 +30,10 @@ public abstract class Value<T> {
     protected final String key;
 
     public Value(String key) {
+        // todo when enabled fix tests
+//        if (!key.startsWith("_")) {
+//            throw new IllegalArgumentException("value.key should start with: _ , eg: _id123");
+//        }
         this.key = key;
     }
 

@@ -16,7 +16,12 @@ So long time to feel excited from a tool, but I am glad that ANTLR exists (29 ye
 
 #antlr #antlr4
  */
-public class KvDatatypesListener extends KvDatatypesBaseListener {
+
+/**
+ * Experimental log listener to test grammar and understand better ANTLR4.
+ * It is used from {@link GrammarPoC}
+ */
+public class KvDatatypesLogListener extends KvDatatypesBaseListener {
 
 
 
@@ -33,6 +38,9 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
         System.out.println("exitParse: " + ctx.getText());
         System.out.println();
     }
+
+
+
 
     // --- entry
 
@@ -58,6 +66,8 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
         }
     }
 
+
+
     // --- nestedEntry
 
     @Override
@@ -72,6 +82,8 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
         System.out.println();
     }
 
+
+
     // --- listEntry
 
     @Override
@@ -83,6 +95,44 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
     @Override
     public void exitListEntry(KvDatatypesParser.ListEntryContext ctx) {
         System.out.println("exitListEntry: " + ctx.getText());
+        System.out.println();
+    }
+
+
+
+    @Override
+    public void enterListEntryStartNode(KvDatatypesParser.ListEntryStartNodeContext ctx) {
+        System.out.println("enterListEntryStartNode: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void exitListEntryStartNode(KvDatatypesParser.ListEntryStartNodeContext ctx) {
+        System.out.println("exitListEntryStartNode: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void enterListEntryMidNode(KvDatatypesParser.ListEntryMidNodeContext ctx) {
+        System.out.println("enterListEntryMidNode: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void exitListEntryMidNode(KvDatatypesParser.ListEntryMidNodeContext ctx) {
+        System.out.println("exitListEntryMidNode: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void enterListEntryEndNode(KvDatatypesParser.ListEntryEndNodeContext ctx) {
+        System.out.println("enterListEntryEndNode: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void exitListEntryEndNode(KvDatatypesParser.ListEntryEndNodeContext ctx) {
+        System.out.println("exitListEntryEndNode: " + ctx.getText());
         System.out.println();
     }
 
@@ -106,6 +156,8 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
         System.out.println();
     }
 
+
+
     // --- key
 
     @Override
@@ -119,6 +171,7 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
         System.out.println("exitKey: " + ctx.ID());
         System.out.println();
     }
+
 
 
     // --- newline
@@ -136,11 +189,13 @@ public class KvDatatypesListener extends KvDatatypesBaseListener {
     }
 
 
+
     // --- terminal
     @Override
     public void visitTerminal(TerminalNode node) {
         //System.out.println("NODE: " + node);
     }
+
 
 
     // --- error node
