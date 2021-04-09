@@ -31,6 +31,15 @@ class ListValueTest {
 
         assertEquals(7, listValue.getValue().size());
 
+
+        // when
+        String s = ListValue.of(
+                ListValue.of(new StringValue("_s1", "v1")),
+                new StringValue("_s2", "v2")
+        ).asString();
+
+        // then
+        assertEquals("{ \"_s1\" : \"v1\" ; \"_s2\" : \"v2\" }", s);
     }
 
 }

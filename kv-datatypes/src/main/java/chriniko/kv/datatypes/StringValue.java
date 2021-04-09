@@ -3,7 +3,7 @@ package chriniko.kv.datatypes;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public final class StringValue extends Value<String> {
+public final class StringValue extends FlatValue<String> {
 
     public static final Set<String> NOT_ALLOWED_CHARS;
     static {

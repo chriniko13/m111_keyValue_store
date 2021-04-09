@@ -8,6 +8,12 @@ grammar KvDatatypes;
 }
 
 
+parse:
+    entry
+    | ANY {System.err.println("unknown char: " + $ANY.text);}
+;
+
+
 key: ID
 ;
 

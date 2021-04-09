@@ -1,6 +1,6 @@
 package chriniko.kv.datatypes;
 
-public final class EmptyValue extends Value<Void> {
+public final class EmptyValue extends FlatValue<Void> {
     public EmptyValue() {
         super(null);
     }

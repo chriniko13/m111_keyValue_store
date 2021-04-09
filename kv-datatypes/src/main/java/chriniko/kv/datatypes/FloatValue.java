@@ -1,6 +1,6 @@
 package chriniko.kv.datatypes;
 
-public final class FloatValue extends Value<Float> {
+public final class FloatValue extends FlatValue<Float> {
 
     private final float value;
 

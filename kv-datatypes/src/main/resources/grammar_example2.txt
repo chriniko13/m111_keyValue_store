@@ -1,3 +1,0 @@
-
-
-{ "n1" : { "fn3" : { "nf4" : { "strTemp" : "allGood allFine all work" } } ; "n2" : { "int2" : 2 } ; "n3" : { "gn3" : { "gn4" : { "gstrTemp" : "allGood" } } ; "gf1" : { "gf2" : { "gf3" : { "gf4" : { "gfString" : "gfValue" } } } } } ; "n5" : { "float2" : 2.34 } ; "n71" : { "n72" : { "n3" : { "n4" : { "strTemp" : "allGood" } } ; "f1" : { "f2" : { "f3" : { "f4" : { "fString" : "fValue" } } } } } } } }

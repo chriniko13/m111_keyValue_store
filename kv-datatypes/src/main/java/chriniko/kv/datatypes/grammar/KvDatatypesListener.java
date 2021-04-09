@@ -5,7 +5,34 @@ import chriniko.kv.datatypes.KvDatatypesParser;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+// todo implement listener and write tests to be sure datatypes requirements are met....
+
+/*
+So long time to feel excited from a tool, but I am glad that ANTLR exists (29 years of hard-solid work), which make our nights' longer (and ofc, our lives easier).
+
+
+
+
+
+#antlr #antlr4
+ */
 public class KvDatatypesListener extends KvDatatypesBaseListener {
+
+
+
+    // --- parse
+
+    @Override
+    public void enterParse(KvDatatypesParser.ParseContext ctx) {
+        System.out.println("enterParse: " + ctx.getText());
+        System.out.println();
+    }
+
+    @Override
+    public void exitParse(KvDatatypesParser.ParseContext ctx) {
+        System.out.println("exitParse: " + ctx.getText());
+        System.out.println();
+    }
 
     // --- entry
 

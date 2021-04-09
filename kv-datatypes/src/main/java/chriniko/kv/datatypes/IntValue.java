@@ -1,6 +1,6 @@
 package chriniko.kv.datatypes;
 
-public final class IntValue extends Value<Integer> {
+public final class IntValue extends FlatValue<Integer> {
 
     private final int value;
 
