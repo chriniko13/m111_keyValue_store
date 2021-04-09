@@ -115,7 +115,7 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
 
                String key = ctx.key().getText().replace("\"", "");
                nestedEntriesKeysStack.push(key);
-
+               currentKey = null;
            }
         }
     }
@@ -125,13 +125,15 @@ public class KvDatatypesAssemblyListener  extends KvDatatypesBaseListener {
         if (ctx != null) {
 
             // when exiting from nested entry...extract create values and create nesting hierarchy
-            while (!nestedEntriesKeysStack.isEmpty()) {
+            if (!nestedEntriesKeysStack.isEmpty()) {
 
                 String key = nestedEntriesKeysStack.pop();
                 Value<?> v = processedValuesStack.pop();
 
                 NestedValue nestedValue = new NestedValue(key, v);
                 processedValuesStack.push(nestedValue);
+            } else {
+                throw new IllegalStateException();
             }
         }
     }

@@ -96,31 +96,31 @@ public class DatatypesAntlrParserComplexTest {
 
     @Test
     void worksAsExpected2() {
-        // =====================================================TODO edw....
+        // =====================================================
         // when
-        String input = "{ \"_n1\" : { \"_someList1\" : [ { \"_str1\" : \"4\" } ; { \"_n2\" : { \"_int2\" : 2 } } ; { \"_n31\" : { \"_n41\" : { \"_strTemp1\" : \"allGood\" } } } ; { \"_n5\" : { \"_float2\" : 2.34 } } ; { \"_n71\" : { \"_n72\" : { \"_someList2\" : [ { \"_n3\" : { \"_n4\" : { \"_strTemp\" : \"allGood\" } } } ; { \"_f1\" : { \"_f2\" : { \"_f3\" : { \"_f4\" : { \"_fString\" : \"fValue\" } } } } } ] } } } ] } }";
-        Value<?> r = DatatypesAntlrParser.process(input);
+//        String input = "{ \"_n1\" : { \"_someList1\" : [ { \"_str1\" : \"4\" } ; { \"_n2\" : { \"_int2\" : 2 } } ; { \"_n31\" : { \"_n41\" : { \"_strTemp1\" : \"allGood\" } } } ; { \"_n5\" : { \"_float2\" : 2.34 } } ; { \"_n71\" : { \"_n72\" : { \"_someList2\" : [ { \"_n3\" : { \"_n4\" : { \"_strTemp\" : \"allGood\" } } } ; { \"_f1\" : { \"_f2\" : { \"_f3\" : { \"_f4\" : { \"_fString\" : \"fValue\" } } } } } ] } } } ] } }";
+//        Value<?> r = DatatypesAntlrParser.process(input);
+//
+//        // then
+//        assertNotNull(r);
+//
+//        assertEquals(
+//                input,
+//                r.asString()
+//        );
+
+
+
+        // =====================================================
+        // when
+        String input = "{ \"_n1\" : { \"_someList\" : [ { \"_fn3\" : { \"_nf4\" : { \"_strTemp\" : \"allGood\" } } } ; { \"_n2\" : { \"_int2\" : 2 } } ; { \"_p3\" : { \"_n3List\" : [ { \"_gn3\" : { \"_gn4\" : { \"_gstrTemp\" : \"allGood\" } } } ; { \"_gf1\" : { \"_gf2\" : { \"_gf3\" : { \"_gf4\" : { \"_gfString\" : \"gfValue\" } } } } } ] } } ; { \"_n5\" : { \"_float2\" : 2.34 } } ; { \"_n71\" : { \"_n72\" : { \"_listGh\" : [ { \"_n3\" : { \"_n4\" : { \"_strTemp\" : \"allGood\" } } } ; { \"_f1\" : { \"_f2\" : { \"_f3\" : { \"_f4\" : { \"_fString\" : \"fValue\" } } } } } ] } } } ] } }";
+        Value r = DatatypesAntlrParser.process(input);
 
         // then
         assertNotNull(r);
 
         assertEquals(
                 input,
-                r.asString()
-        );
-
-
-
-        // =====================================================TODO edw...
-        // when
-        r = DatatypesAntlrParser.process("{\"_n1\" : {\"_fn3\" : {\"_nf4\" : {\"_strTemp\" : \"allGood\"}} ; \"_n2\" : {\"_int2\" : 2} ; \"_n3\" : {\"_n4\" : {\"_strTemp2\" : \"allGood\"}} ; \"_n5\" : {\"_float2\" : 2.34} ; \"_n71\" : {\"_n72\" : {\"_n31\" : {\"_n4\" : {\"_strTemp3\" : \"allGood\"}} ; \"_f1\" : {\"_f2\" : {\"_f3\" : {\"_f4\" : {\"_fString\" : \"fValue\"}}}}}}}}");
-
-
-        // then
-        assertNotNull(r);
-
-        assertEquals(
-                "{\"_n1\" : {\"_fn3\" : {\"_nf4\" : {\"_strTemp\" : \"allGood\" } } ; \"_n2\" : { \"_int2\" : 2 } ; \"_n3\" : { \"_n4\" : { \"_strTemp2\" : \"allGood\" } } ; \"_n5\" : { \"_float2\" : 2.34 } ; \"_n71\" : { \"_n72\" : { \"_n31\" : { \"_n4\" : { \"_strTemp3\" : \"allGood\" } } ; \"_f1\" : { \"_f2\" : { \"_f3\" : { \"_f4\" : { \"_fString\" : \"fValue\" } } } } } } } }",
                 r.asString()
         );
     }
