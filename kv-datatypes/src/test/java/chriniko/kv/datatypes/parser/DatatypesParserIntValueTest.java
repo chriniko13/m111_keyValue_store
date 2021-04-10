@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DatatypesParserIntValueTest {
 
     @Test
-    void parseWorksAsExpected() {
+    void parseWorksAsExpected() throws Exception {
 
         // given
         IntValue intValue = new IntValue("grade", 7);

@@ -35,6 +35,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>kv-datatypes</artifactId>
+            <version>${version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
         </dependency>

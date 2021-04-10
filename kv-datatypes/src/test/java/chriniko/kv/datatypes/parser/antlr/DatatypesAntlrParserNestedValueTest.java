@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DatatypesAntlrParserNestedValueTest {
 
     @Test
-    void worksAsExpected() {
+    void worksAsExpected() throws Exception {
 
         // when
         Value<?> r = DatatypesAntlrParser.process("{ \"_fn3\" : { \"_nf4\" : { \"_strTemp\" : \"allGood allFine all work\" } } }");

@@ -14,7 +14,7 @@ public class DatatypesParserListValueTest {
 
 
     @Test
-    void parseWorksAsExpected() {
+    void parseWorksAsExpected() throws Exception {
 
         // when
         ListValue result = DatatypesParser.parseList("{\"name\" : \"nikolaos christidis\" ;" +
@@ -51,7 +51,7 @@ public class DatatypesParserListValueTest {
 
 
     @Test
-    void parseWorksAsExpected2() {
+    void parseWorksAsExpected2() throws Exception {
 
         // when
         ListValue result = DatatypesParser.parseList("{ \"name\" : \"nikolaos christidis\" " +

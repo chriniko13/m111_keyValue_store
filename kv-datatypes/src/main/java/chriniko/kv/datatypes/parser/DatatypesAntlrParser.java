@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 public class DatatypesAntlrParser {
 
-    public static Value<?> process(String input) {
+    public static Value<?> process(String input) throws ParsingException {
 
         KvDatatypesLexer serverLogLexer = new KvDatatypesLexer(CharStreams.fromString(input));
         CommonTokenStream tokens = new CommonTokenStream(serverLogLexer);

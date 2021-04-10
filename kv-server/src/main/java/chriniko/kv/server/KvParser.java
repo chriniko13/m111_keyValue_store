@@ -1,5 +1,9 @@
 package chriniko.kv.server;
 
+import chriniko.kv.datatypes.Value;
+import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.datatypes.error.UncheckedParsingException;
+import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
 
@@ -8,7 +12,20 @@ import java.nio.charset.StandardCharsets;
 
 public class KvParser {
 
+
     public void process(final String serverName, final ByteBuffer byteBuffer, final KvStorageEngine kvStorageEngine) {
+
+        try {
+            __process(serverName, byteBuffer, kvStorageEngine);
+        } catch (Exception e) {
+            System.err.println("error occurred in KvParser#process, msg: " + e.getMessage());
+            String errorResp = ProtocolConstants.ERROR_RESP.apply(e.getMessage());
+            writeResponseMessage(byteBuffer, errorResp);
+        }
+
+    }
+
+    private void __process(final String serverName, final ByteBuffer byteBuffer, final KvStorageEngine kvStorageEngine) {
 
         // Note: flip the byte buffer so that we can read from the start correctly.
         byteBuffer.flip();
@@ -27,13 +44,12 @@ public class KvParser {
 
         if (Operations.HEALTH_CHECK.getMsgOp().equals(messageReceivedFromBroker)) {
 
-            String okayResp = ProtocolConstants.OKAY_RESP;
+            final String okayResp = ProtocolConstants.OKAY_RESP;
             System.out.println("WILL REPLY WITH: " + okayResp);
             writeResponseMessage(byteBuffer, okayResp);
 
-        } else if (messageReceivedFromBroker.contains(Operations.PUT.getMsgOp())) {
+        } else if (messageReceivedFromBroker.startsWith(Operations.PUT.getMsgOp())) {
 
-            // TODO validate string received if is valid... (RETURN ERROR)
 
             String key = messageReceivedFromBroker.split(":")[0];
             final int keySizeBeforeCleaning = key.length();
@@ -42,45 +58,61 @@ public class KvParser {
             key = key.replace("\"", ""); // note: throw "
             key = key.trim();
 
+            String serializedValue = messageReceivedFromBroker.substring(keySizeBeforeCleaning + 1 /* Note: plus one in order to not have the : */);
+            serializedValue = serializedValue.trim();
 
-            String value = messageReceivedFromBroker.substring(keySizeBeforeCleaning + 1 /* Note: plus one in order to not have the : */);
+            try {
+                System.out.println("SERIALIZED VALUE: " + serializedValue);
+                final Value<?> deserializedValue = DatatypesAntlrParser.process(serializedValue);
+                kvStorageEngine.save(key, deserializedValue);
 
-            value = value.trim();
+                String okayResp = ProtocolConstants.OKAY_RESP;
+                System.out.println("WILL REPLY WITH: " + okayResp);
+                writeResponseMessage(byteBuffer, okayResp);
 
-            kvStorageEngine.save(key, value);
+            } catch (ParsingException e) {
 
-            String okayResp = ProtocolConstants.OKAY_RESP;
-            System.out.println("WILL REPLY WITH: " + okayResp);
-            writeResponseMessage(byteBuffer, okayResp);
+                System.err.println("parsing error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply("[parsingError]" + e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
 
-        } else if (messageReceivedFromBroker.contains(Operations.GET.getMsgOp())) {
+            } catch (UncheckedParsingException e) {
 
-            // TODO validate string received if is valid... (RETURN ERROR)
+                ParsingException error = e.getError();
 
-            String[] s = messageReceivedFromBroker.split(" ");
-            String operation = s[0];
-            String key = s[1];
+                System.err.println("parsing error occurred, msg: " + error.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply("[parsingError]" + error.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
+            }
+
+
+        } else if (messageReceivedFromBroker.startsWith(Operations.GET.getMsgOp())) {
+
+            final String[] s = messageReceivedFromBroker.split(" ");
+            final String operation = s[0];
+            final String key = s[1];
 
             System.out.println("get operation: " + operation + " --- key: " + key);
 
-            String result = kvStorageEngine.fetch(key);
+            final Value<?> result = kvStorageEngine.fetch(key);
             if (result != null) {
 
-                String okayResp = ProtocolConstants.OKAY_RESP + "#" + result;
+                final String serializedResult = result.asString();
+
+                final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
                 System.out.println("WILL REPLY WITH: " + okayResp);
                 writeResponseMessage(byteBuffer, okayResp);
 
             } else {
 
-                String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
                 System.out.println("WILL REPLY WITH: " + notFoundResp);
                 writeResponseMessage(byteBuffer, notFoundResp);
 
             }
 
-
-
-        } else if (messageReceivedFromBroker.contains(Operations.DELETE.getMsgOp())) {
+        } else if (messageReceivedFromBroker.startsWith(Operations.DELETE.getMsgOp())) {
 
             // TODO validate string received if is valid... (RETURN ERROR)
 
@@ -90,7 +122,8 @@ public class KvParser {
             System.out.println("WILL REPLY WITH: " + okayResp);
             writeResponseMessage(byteBuffer, okayResp);
 
-        } else if (messageReceivedFromBroker.contains(Operations.QUERY.getMsgOp())) {
+
+        } else if (messageReceivedFromBroker.startsWith(Operations.QUERY.getMsgOp())) {
 
             // TODO validate string received if is valid... (RETURN ERROR)
 

@@ -1,14 +1,17 @@
 package chriniko.kv.server;
 
+import chriniko.kv.datatypes.Value;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 public class KvStorageEngine {
 
     //TODO replace with concurrent trie
-    private final ConcurrentHashMap<String, String> m = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Value<?>> m = new ConcurrentHashMap<>();
 
-    public void save(String key, String value) {
-        m.put(key, value);
+
+    public void save(String key, Value<?> v) {
+        m.put(key, v);
     }
 
     public int totalRecords() {
@@ -17,7 +20,7 @@ public class KvStorageEngine {
         return size;
     }
 
-    public String fetch(String key) {
+    public Value<?> fetch(String key) {
         return m.get(key);
     }
 }

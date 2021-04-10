@@ -2,6 +2,8 @@ package chriniko.kv.datatypes.grammar;
 
 import chriniko.kv.datatypes.*;
 import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.datatypes.error.ParsingInfraException;
+import chriniko.kv.datatypes.error.UncheckedParsingException;
 import lombok.Getter;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -68,10 +70,10 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
         // make sure processing finished.
         if (!listValuesStack.isEmpty()) {
-            throw new IllegalStateException("!listValuesStack.isEmpty()");
+            throw new ParsingInfraException("!listValuesStack.isEmpty()");
         }
         if (!nestedEntriesKeysStack.isEmpty()) {
-            throw new IllegalStateException("!nestedEntriesKeysStack.isEmpty()");
+            throw new ParsingInfraException("!nestedEntriesKeysStack.isEmpty()");
         }
 
 
@@ -84,12 +86,15 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
             System.out.println("list: " + processedKeysList);
             System.out.println("set: " + temp);
-            throw new ParsingException("(processedKeysList.size() != processedKeysSet.size()) duplicated keys found - check your input!");
+
+            ParsingException parsingException
+                    = new ParsingException("(processedKeysList.size() != processedKeysSet.size()) duplicated keys found - check your input!");
+            throw new UncheckedParsingException(parsingException);
         }
 
         // just pop the only one value in stack which is the result
         if (processedValuesStack.size() != 1) {
-            throw new IllegalStateException("processedValuesStack.size() != 1");
+            throw new ParsingInfraException("processedValuesStack.size() != 1");
         }
         result = processedValuesStack.pop();
 
@@ -274,7 +279,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
                 currentKey = null;
             } else {
-                throw new IllegalStateException();
+                throw new ParsingInfraException("exitValue: v == null");
             }
         }
     }

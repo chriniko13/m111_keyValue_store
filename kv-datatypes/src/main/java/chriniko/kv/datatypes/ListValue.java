@@ -13,12 +13,6 @@ public final class ListValue extends Value<List<Value<?>>> {
         values = new LinkedList<>();
     }
 
-    //todo throw it away...
-    public ListValue() {
-        super(null);
-        values = new LinkedList<>();
-    }
-
     public static Value<?> of(String key, Value<?>... elems) {
         Objects.requireNonNull(key, "key should not be null");
         Objects.requireNonNull(elems, "elems should not be null");

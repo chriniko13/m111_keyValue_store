@@ -2,6 +2,8 @@ package chriniko.kv.datatypes.parser;
 
 import chriniko.kv.datatypes.*;
 import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.datatypes.error.ParsingInfraException;
+import chriniko.kv.datatypes.error.UncheckedParsingException;
 import chriniko.kv.datatypes.infra.BalancedParanthesis;
 
 import java.util.ArrayDeque;
@@ -11,7 +13,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-
+/**
+ * @deprecated this has only kept as a reference and for historical purposes about the assignment and how I end up creating grammar
+ * with ANTLR4, so please use {@link DatatypesAntlrParser} for parsing input
+ */
 public final class DatatypesParser {
 
     /**
@@ -22,24 +27,48 @@ public final class DatatypesParser {
     static {
         PARSERS_BY_TYPE = new LinkedHashMap<>(); // Note: linked hash map in order to force ordering (higher precedence, etc.)
 
-        PARSERS_BY_TYPE.put(IntValue.class, s -> parseInt(s, false));
+        PARSERS_BY_TYPE.put(IntValue.class, s -> {
+            try {
+                return parseInt(s, false);
+            } catch (ParsingException e) {
+                throw new UncheckedParsingException(e);
+            }
+        });
 
-        PARSERS_BY_TYPE.put(FloatValue.class, s -> parseFloat(s, false));
+        PARSERS_BY_TYPE.put(FloatValue.class, s -> {
+            try {
+                return parseFloat(s, false);
+            } catch (ParsingException e) {
+                throw new UncheckedParsingException(e);
+            }
+        });
 
-        PARSERS_BY_TYPE.put(EmptyValue.class, DatatypesParser::parseEmpty);
+        PARSERS_BY_TYPE.put(EmptyValue.class, s1 -> {
+            try {
+                return parseEmpty(s1);
+            } catch (ParsingException e) {
+                throw new UncheckedParsingException(e);
+            }
+        });
 
-        PARSERS_BY_TYPE.put(StringValue.class, s -> parseString(s, false));
+        PARSERS_BY_TYPE.put(StringValue.class, s -> {
+            try {
+                return parseString(s, false);
+            } catch (ParsingException e) {
+                throw new UncheckedParsingException(e);
+            }
+        });
     }
 
 
     private static final Pattern emptyValueRegex = Pattern.compile("\\s*\\{\\s*\\}\\s*");
 
 
-    public static FloatValue parseFloat(String s) {
+    public static FloatValue parseFloat(String s) throws ParsingException {
         return parseFloat(s, true);
     }
 
-    public static FloatValue parseFloat(String s, boolean checkOpenCloseParenthesis) {
+    public static FloatValue parseFloat(String s, boolean checkOpenCloseParenthesis) throws ParsingException {
         validateInput(s);
 
         boolean openParanthesis = false;
@@ -134,7 +163,7 @@ public final class DatatypesParser {
         return new FloatValue(key, value);
     }
 
-    public static EmptyValue parseEmpty(String s) {
+    public static EmptyValue parseEmpty(String s) throws ParsingException {
         if (s == null) {
             throw new ParsingException("malformed, empty value should be a null or empty string");
         }
@@ -146,11 +175,11 @@ public final class DatatypesParser {
         return new EmptyValue();
     }
 
-    public static IntValue parseInt(String s) {
+    public static IntValue parseInt(String s) throws ParsingException {
         return parseInt(s, true);
     }
 
-    public static IntValue parseInt(String s, boolean checkOpenCloseParenthesis) {
+    public static IntValue parseInt(String s, boolean checkOpenCloseParenthesis) throws ParsingException {
         validateInput(s);
 
         boolean openParanthesis = false;
@@ -244,7 +273,7 @@ public final class DatatypesParser {
         return new IntValue(key, value);
     }
 
-    public static ListValue parseList(String s) {
+    public static ListValue parseList(String s) throws ParsingException {
         validateInput(s);
 
         final String[] splittedEntries = s.split(ListValue.SEPARATOR);
@@ -312,7 +341,7 @@ public final class DatatypesParser {
                         parsed = true;
                         valuesProcessed.add(result);
                         break;
-                    } catch (ParsingException e) {
+                    } catch (UncheckedParsingException e) {
                         //System.err.println(e.getMessage());
                         //e.printStackTrace(System.err);
                     }
@@ -343,7 +372,7 @@ public final class DatatypesParser {
             {"n1" : {"str1" : "4" ; "n2" : {"int2" : 2} ; "n3" : {"n4" : {"strTemp" : "allGood"}} ; "n5" : {"float2" : 2.34} ; "n71" : {"n72" : {"float3" : 3.34 ; "float4" : 4.34}}}}
 
      */
-    public static NestedValue parseNested(String s) {
+    public static NestedValue parseNested(String s) throws ParsingException {
 
         int openParanthesisCounter = 0;
 
@@ -469,7 +498,7 @@ public final class DatatypesParser {
                                 parsed = true;
                                 valuesProcessed.push(result);
                                 break;
-                            } catch (ParsingException e) {
+                            } catch (UncheckedParsingException e) {
                                 //System.err.println(e.getMessage());
                                 //e.printStackTrace(System.err);
                             }
@@ -509,7 +538,7 @@ public final class DatatypesParser {
                     final Value<?> poppedValue = valuesProcessed.pop();
 
                     if (lastValueConstructed != null) {
-                        throw new IllegalStateException("this case should never happen (lastValueConstructed != null)");
+                        throw new ParsingInfraException("this case should never happen (lastValueConstructed != null)");
                     } else {
                         lastValueConstructed = new NestedValue(poppedKey, poppedValue);
                     }
@@ -517,7 +546,7 @@ public final class DatatypesParser {
                 } else {
 
                     if (lastValueConstructed == null) {
-                        throw new IllegalStateException("this case should never happen (lastValueConstructed == null)");
+                        throw new ParsingInfraException("this case should never happen (lastValueConstructed == null)");
                     } else {
                         lastValueConstructed = new NestedValue(poppedKey, lastValueConstructed);
                     }
@@ -532,11 +561,11 @@ public final class DatatypesParser {
         }
     }
 
-    public static StringValue parseString(String s) {
+    public static StringValue parseString(String s) throws ParsingException {
         return parseString(s, true);
     }
 
-    public static StringValue parseString(String s, boolean checkOpenCloseParenthesis) {
+    public static StringValue parseString(String s, boolean checkOpenCloseParenthesis) throws ParsingException {
         validateInput(s);
 
         for (String notAllowedChar : StringValue.NOT_ALLOWED_CHARS) {
@@ -644,7 +673,7 @@ public final class DatatypesParser {
 
     private static void _validations(boolean checkOpenCloseParenthesis, boolean openParanthesis, boolean closeParanthesis,
                                      boolean colonFound, boolean keyParsed,
-                                     boolean valueParsed) {
+                                     boolean valueParsed) throws ParsingException {
 
         if (checkOpenCloseParenthesis) {
             if (!openParanthesis) {
@@ -667,7 +696,7 @@ public final class DatatypesParser {
         }
     }
 
-    private static void validateInput(String s) {
+    private static void validateInput(String s) throws ParsingException {
         if (s == null || s.isEmpty()) {
             throw new ParsingException("malformed, empty string (or null) provided");
         }

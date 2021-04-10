@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DatatypesParserNestedValueTest {
 
     @Test
-    void parseWorksAsExpected() {
+    void parseWorksAsExpected() throws Exception {
 
 
         // when

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DatatypesAntlrParserListValueTest {
 
     @Test
-    void worksAsExpected() {
+    void worksAsExpected() throws Exception {
 
         // when
         String s = "{ \"_myList\" : [ { \"_strTemp\" : \"allGood allFine all work\" } " +

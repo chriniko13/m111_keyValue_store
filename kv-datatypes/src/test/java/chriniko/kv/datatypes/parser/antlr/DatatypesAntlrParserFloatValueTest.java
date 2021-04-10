@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DatatypesAntlrParserFloatValueTest {
 
     @Test
-    void worksAsExpected() {
+    void worksAsExpected() throws Exception {
 
         // when
         Value<?> r = DatatypesAntlrParser.process("{ \"_float\" : 17.11 } ");

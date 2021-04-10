@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DatatypesAntlrParserStringValueTest {
 
     @Test
-    void worksAsExpected() {
+    void worksAsExpected() throws Exception {
 
         // when
         Value<?> r = DatatypesAntlrParser.process("{ \"_strTemp\" : \"allGood allFine all work\" } ");

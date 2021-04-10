@@ -1,6 +1,7 @@
 package chriniko.kv.broker;
 
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
+import chriniko.kv.datatypes.Value;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.server.KvServer;
 import org.awaitility.Awaitility;
@@ -34,6 +35,8 @@ class KvBrokerTest {
     void startWorksAsExpected() throws Exception {
 
         // given (having started the servers)
+        int recordsInserted = 10;
+
         final CountDownLatch serversReady = new CountDownLatch(3);
 
         final KvServer kvServer1 = KvServer.create("server1");
@@ -99,8 +102,7 @@ class KvBrokerTest {
                 .untilAsserted(() -> {
 
                     Map<KvServerContactPoint, KvServerClient> kvServerClients = kvBroker.getKvServerClientsByContactPoint();
-
-                    System.out.println("NIAOU: " + kvServerClients);
+                    System.out.println("kvServerClients: " + kvServerClients);
 
                     assertEquals(3, kvServerClients.size());
 
@@ -128,17 +130,18 @@ class KvBrokerTest {
                     int replicationsPerformed = 0;
 
                     int records = kvServer1.getStorageEngine().totalRecords();
-                    if (records == 50) {
+                    System.out.println("RECORDS: " + records);
+                    if (records == recordsInserted) {
                         replicationsPerformed++;
                     }
 
                     records = kvServer2.getStorageEngine().totalRecords();
-                    if (records == 50) {
+                    if (records == recordsInserted) {
                         replicationsPerformed++;
                     }
 
                     records = kvServer3.getStorageEngine().totalRecords();
-                    if (records == 50) {
+                    if (records == recordsInserted) {
                         replicationsPerformed++;
                     }
 
@@ -211,11 +214,11 @@ class KvBrokerTest {
 
 
         // when
-        kvBroker.put("sample-key", "{\"name\": 123}", ConsistencyLevel.ALL);
+        kvBroker.put("sample-key", "{\"_name\": 123}", ConsistencyLevel.ALL);
 
 
         // then
-        String result = kvServer1.getStorageEngine().fetch("sample-key");
+        Value<?> result = kvServer1.getStorageEngine().fetch("sample-key");
         assertNotNull(result);
 
         result = kvServer2.getStorageEngine().fetch("sample-key");
@@ -226,7 +229,7 @@ class KvBrokerTest {
 
 
         // when
-        kvBroker.put("sample-key2", "{\"name\": 123}", ConsistencyLevel.ONE);
+        kvBroker.put("sample-key2", "{\"_name\": 123}", ConsistencyLevel.ONE);
 
 
         // then
@@ -250,7 +253,7 @@ class KvBrokerTest {
 
 
         // when
-        kvBroker.put("sample-key3", "{\"name\": 123}", ConsistencyLevel.QUORUM);
+        kvBroker.put("sample-key3", "{\"_name\": 123}", ConsistencyLevel.QUORUM);
 
 
         // then
@@ -274,7 +277,7 @@ class KvBrokerTest {
 
 
         // when
-        kvBroker.put("sample-key4", "{\"name\": 123}", ConsistencyLevel.REPLICATION_FACTOR);
+        kvBroker.put("sample-key4", "{\"_name\": 123}", ConsistencyLevel.REPLICATION_FACTOR);
 
 
         // then
@@ -382,8 +385,8 @@ class KvBrokerTest {
 
 
         // given (add an entry with put operation)
-        kvBroker.put("sample-key", "{\"name\": 123}", ConsistencyLevel.ALL);
-        String v = kvServer1.getStorageEngine().fetch("sample-key");
+        kvBroker.put("sample-key", "{\"_name\": 123}", ConsistencyLevel.ALL);
+        Value<?> v = kvServer1.getStorageEngine().fetch("sample-key");
         assertNotNull(v);
 
         v = kvServer2.getStorageEngine().fetch("sample-key");
@@ -398,7 +401,7 @@ class KvBrokerTest {
 
         // then
         assertTrue(result.isPresent());
-        assertEquals("{\"name\": 123}", result.get());
+        assertEquals("{ \"_name\" : 123 }", result.get());
 
 
         // when

@@ -14,6 +14,6 @@ public class ProtocolConstants {
 
     public static final String UNKNOWN_COMMAND_RESP = "UNKNOWN_COMMAND_RECEIVED";
     public static final String NOT_FOUND_RESP = "NOT_FOUND";
-    public static final Function<Integer, String> ERROR_RESP = errorCode -> "ERROR: " + errorCode;
+    public static final Function<String, String> ERROR_RESP = errorCode -> "ERROR: " + errorCode;
 
 }

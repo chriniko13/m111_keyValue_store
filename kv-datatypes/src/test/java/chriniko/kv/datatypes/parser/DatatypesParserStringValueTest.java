@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DatatypesParserStringValueTest {
 
     @Test
-    void parseWorksAsExpected() {
+    void parseWorksAsExpected() throws ParsingException {
 
         // given
         StringValue stringValue = new StringValue("firstname", "nikos");

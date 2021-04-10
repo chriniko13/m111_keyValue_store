@@ -1,5 +1,6 @@
 package chriniko.kv.datatypes.infra;
 
+import chriniko.kv.datatypes.error.ParsingException;
 import chriniko.kv.datatypes.parser.DatatypesParser;
 import chriniko.kv.datatypes.NestedValue;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class BalancedParanthesisTest {
 
 
     @Test
-    void process2() {
+    void process2() throws ParsingException {
 
 
         /*

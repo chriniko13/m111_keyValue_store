@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DatatypesAntlrParserIntValueTest {
 
     @Test
-    void worksAsExpected() {
+    void worksAsExpected() throws Exception {
 
         // when
         Value<?> r = DatatypesAntlrParser.process("{ \"_int\" : 17 } ");

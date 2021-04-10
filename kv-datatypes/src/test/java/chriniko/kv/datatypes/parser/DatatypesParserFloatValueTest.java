@@ -12,7 +12,7 @@ class DatatypesParserFloatValueTest {
 
 
     @Test
-    void parseWorksAsExpected() {
+    void parseWorksAsExpected() throws Exception {
 
         // given
         FloatValue floatValue = new FloatValue("grade", 7.5F);
