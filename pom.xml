@@ -15,6 +15,7 @@
         <module>kv-server</module>
         <module>kv-protocol</module>
         <module>kv-datatypes</module>
+        <module>kv-trie</module>
     </modules>
 
     <properties>

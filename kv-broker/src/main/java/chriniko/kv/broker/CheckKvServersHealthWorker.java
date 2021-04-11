@@ -2,12 +2,12 @@ package chriniko.kv.broker;
 
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
+import lombok.Getter;
 import org.javatuples.Pair;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,12 +32,16 @@ public class CheckKvServersHealthWorker extends Thread {
     private final int replicationFactor;
     private final AtomicBoolean replicationThresholdSatisfied;
 
+    private final Object workMutex = new Object();
+    private boolean work;
+
+    @Getter
+    private volatile boolean paused;
 
     /**
      * From this we calculate the: {@link CheckKvServersHealthWorker#kvServerHealthStateStatsByContactPoint} and
      * {@link CheckKvServersHealthWorker#kvServerClientsByServerHealthStateStats}
      */
-    //TODO create a copy of this....
     private final ConcurrentHashMap<
             KvServerContactPoint,
             Pair<KvServerClient /*owned by broker*/, KvServerClient /*owned by health worker*/>
@@ -62,6 +66,8 @@ public class CheckKvServersHealthWorker extends Thread {
         this.replicationFactor = replicationFactor;
         this.replicationThresholdSatisfied = replicationThresholdSatisfied;
 
+        this.work = true;
+
 
         this.kvServerClientsByContactPoint = new ConcurrentHashMap<>();
         kvServerClientsByContactPoint.forEach((kvServerContactPoint, kvServerClient) -> {
@@ -83,11 +89,36 @@ public class CheckKvServersHealthWorker extends Thread {
         this.kvServerClientsByServerHealthStateStats = kvServerClientsByServerHealthStateStats;
     }
 
+    public void resumeCheck() {
+        synchronized (workMutex) {
+            work = true;
+        }
+    }
+
+    public void pauseCheck() {
+        synchronized (workMutex) {
+            work = false;
+        }
+    }
 
     @Override
     public void run() {
 
         for (; ; ) {
+
+            // implement resume/pause check functionality
+            synchronized (workMutex) {
+                if (!work) {
+                    System.out.println("checkKvServersHealthWorker has been put to sleep....");
+                    paused = true;
+                    continue;
+                } else {
+                    System.out.println("checkKvServersHealthWorker has woke up....");
+                    paused = false;
+                }
+            }
+
+
 
             if (Thread.currentThread().isInterrupted()) {
                 System.out.println("checkServersHealthWorker thread killed!");

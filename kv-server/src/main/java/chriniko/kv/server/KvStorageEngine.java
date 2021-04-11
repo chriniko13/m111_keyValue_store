@@ -1,26 +1,26 @@
 package chriniko.kv.server;
 
 import chriniko.kv.datatypes.Value;
-
-import java.util.concurrent.ConcurrentHashMap;
+import chriniko.kv.trie.Trie;
 
 public class KvStorageEngine {
 
-    //TODO replace with concurrent trie
-    private final ConcurrentHashMap<String, Value<?>> m = new ConcurrentHashMap<>();
-
+    private final Trie<KvRecord> memoDb = new Trie<>();
 
     public void save(String key, Value<?> v) {
-        m.put(key, v);
+        memoDb.insert(key, new KvRecord(key, v));
     }
 
     public int totalRecords() {
-        int size = m.size();
+        Trie<KvRecord>.TrieStatistics trieStatistics = memoDb.gatherStatisticsWithRecursion();
+        int size = trieStatistics.getCountOfCompleteWords();
         System.out.println("total records: " + size);
         return size;
     }
 
     public Value<?> fetch(String key) {
-        return m.get(key);
+        return memoDb.find(key)
+                .map(KvRecord::value)
+                .orElse(null);
     }
 }

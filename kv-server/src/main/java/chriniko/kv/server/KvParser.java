@@ -18,7 +18,9 @@ public class KvParser {
         try {
             __process(serverName, byteBuffer, kvStorageEngine);
         } catch (Exception e) {
+            e.printStackTrace(System.err);
             System.err.println("error occurred in KvParser#process, msg: " + e.getMessage());
+
             String errorResp = ProtocolConstants.ERROR_RESP.apply(e.getMessage());
             writeResponseMessage(byteBuffer, errorResp);
         }

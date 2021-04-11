@@ -1,4 +1,4 @@
-package chriniko.kv.server.trie;
+package chriniko.kv.trie;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.ToString;
 
 import java.util.*;
 
-public class Trie<T extends TrieEntry> {
+public class Trie<T extends TrieEntry<?>> {
 
     private static final boolean EAGER_DELETION = true;
 

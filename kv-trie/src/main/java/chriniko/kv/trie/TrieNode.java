@@ -1,4 +1,4 @@
-package chriniko.kv.server.trie;
+package chriniko.kv.trie;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -171,11 +171,16 @@ class CheckKvServersHealthWorkerTest {
 
 
         // when (also another server goes down, so 2 are down out of 3, replication factor is 2, so it should NOT be satisfied)
+        w.pauseCheck();
+        while (!w.isPaused());
+
+
         Mockito.reset(kvServerClient2);
         Mockito.when(kvServerClient2.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
                 .thenThrow(IOException.class);
         Mockito.when(kvServerClient2.makeCopy()).thenReturn(kvServerClient2);
 
+        w.resumeCheck();
 
 
         // then
