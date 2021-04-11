@@ -78,14 +78,6 @@ public class KvParser {
                 String errorResp = ProtocolConstants.ERROR_RESP.apply("[parsingError]" + e.getMessage());
                 writeResponseMessage(byteBuffer, errorResp);
 
-            } catch (UncheckedParsingException e) {
-
-                ParsingException error = e.getError();
-
-                System.err.println("parsing error occurred, msg: " + error.getMessage());
-                String errorResp = ProtocolConstants.ERROR_RESP.apply("[parsingError]" + error.getMessage());
-                writeResponseMessage(byteBuffer, errorResp);
-
             }
 
 

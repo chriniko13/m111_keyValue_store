@@ -1,6 +1,7 @@
 package chriniko.kv.broker;
 
 import chriniko.kv.datatypes.Value;
+import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.server.KvServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,7 +86,7 @@ public class KvBrokerPutOperationTest {
 
         // =====================================================================================================================
         // when
-        kvBroker.put("sample-key", "{\"_name\": 123}", ConsistencyLevel.ALL);
+        kvBroker.put("sample-key", DatatypesAntlrParser.process("{\"_name\": 123}"), ConsistencyLevel.ALL);
 
 
         // then
@@ -102,7 +103,7 @@ public class KvBrokerPutOperationTest {
 
         // =====================================================================================================================
         // when
-        kvBroker.put("sample-key2", "{\"_name\": 123}", ConsistencyLevel.ONE);
+        kvBroker.put("sample-key2", DatatypesAntlrParser.process("{\"_name\": 123}"), ConsistencyLevel.ONE);
 
 
         // then
@@ -128,7 +129,7 @@ public class KvBrokerPutOperationTest {
 
         // =====================================================================================================================
         // when
-        kvBroker.put("sample-key3", "{\"_name\": 123}", ConsistencyLevel.QUORUM);
+        kvBroker.put("sample-key3", DatatypesAntlrParser.process("{\"_name\": 123}"), ConsistencyLevel.QUORUM);
 
 
         // then
@@ -154,7 +155,7 @@ public class KvBrokerPutOperationTest {
 
         // =====================================================================================================================
         // when
-        kvBroker.put("sample-key4", "{\"_name\": 123}", ConsistencyLevel.REPLICATION_FACTOR);
+        kvBroker.put("sample-key4", DatatypesAntlrParser.process("{\"_name\": 123}"), ConsistencyLevel.REPLICATION_FACTOR);
 
 
         // then
@@ -186,7 +187,7 @@ public class KvBrokerPutOperationTest {
 
 
 
-    // TODO put test consistency levels and if failures work as expected....
+    // TODO put test consistency levels and if failures work as expected....use jacoco
 
 
     // TODO parsing error.....

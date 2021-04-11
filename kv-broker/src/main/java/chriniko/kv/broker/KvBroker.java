@@ -1,7 +1,12 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.error.KvInfraBadStateException;
+import chriniko.kv.broker.error.UncheckedKvInfraBadStateException;
 import chriniko.kv.broker.error.availability.*;
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
+import chriniko.kv.datatypes.Value;
+import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
@@ -186,15 +191,18 @@ public class KvBroker {
         return r;
     }
 
-    public void put(String key, String value, ConsistencyLevel consistencyLevel) throws KvServerAvailabilityException, IOException, ErrorReceivedFromKvServerException {
+    public void put(String key, Value<?> value, ConsistencyLevel consistencyLevel) throws KvServerAvailabilityException, IOException, ErrorReceivedFromKvServerException {
 
         if (consistencyLevel == ConsistencyLevel.ONE) {
 
+            // check servers state
             final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
             if (r == null || r.isEmpty()) {
                 throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
             }
 
+
+            // pick correct ones and process
             final Pair<KvServerClient, KvServerContactPoint> selection = SetUtils.pickOneRandomly(r);
 
             System.out.println("will execute put operation against kv-server: " + selection.getValue1());
@@ -204,15 +212,17 @@ public class KvBroker {
 
         } else if (consistencyLevel == ConsistencyLevel.ALL) {
 
+            // check servers state
             final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
             if (r == null || r.isEmpty()) {
                 throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
             }
-
-            if (kvServerClientsByContactPoint.size() != r.size()) {
+            if (r.size() < kvServerClientsByContactPoint.size()) {
                 throw new NotAllKvServersAreUpException("only: " + r.size() + " servers are up, which you have registered: " + kvServerClientsByContactPoint.size() + " in total");
             }
 
+
+            // pick correct ones and process
             for (Pair<KvServerClient, KvServerContactPoint> selection : r) {
 
                 System.out.println("will execute put operation against kv-server: " + selection.getValue1());
@@ -223,19 +233,20 @@ public class KvBroker {
 
         } else if (consistencyLevel == ConsistencyLevel.QUORUM) {
 
+            // check servers state
             final int quorum = ConsistencyLevel.calculateQuorum(this.replicationFactor);
 
             final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
             if (r == null || r.isEmpty()) {
                 throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
             }
-
             if (r.size() < quorum) {
                 throw new QuorumNotApplicableException("quorum: " + quorum + " for replicationFactor: " + replicationFactor + " is not applicable, due to limited up servers: " + r.size());
             }
 
-            final Set<Pair<KvServerClient, KvServerContactPoint>> selected = SetUtils.pickN(quorum, r);
 
+            // pick correct ones and process
+            final Set<Pair<KvServerClient, KvServerContactPoint>> selected = SetUtils.pickN(quorum, r);
             for (Pair<KvServerClient, KvServerContactPoint> s : selected) {
                 System.out.println("will execute put operation against kv-server: " + s.getValue1());
 
@@ -245,14 +256,15 @@ public class KvBroker {
 
         } else if (consistencyLevel == ConsistencyLevel.REPLICATION_FACTOR) {
 
+            // check servers state
             final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
-
             if (!this.getReplicationThresholdSatisfied()) {
                 throw new ReplicationFactorNotApplicableException("replication factor: " + replicationFactor + " is not satisfied");
             }
 
-            final Set<Pair<KvServerClient, KvServerContactPoint>> selected = SetUtils.pickN(replicationFactor, r);
 
+            // pick correct ones and process
+            final Set<Pair<KvServerClient, KvServerContactPoint>> selected = SetUtils.pickN(replicationFactor, r);
             for (Pair<KvServerClient, KvServerContactPoint> s : selected) {
                 System.out.println("will execute put operation against kv-server: " + s.getValue1());
 
@@ -265,23 +277,20 @@ public class KvBroker {
         }
     }
 
-    public Optional<String> get(String key, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException {
 
+    public Optional<Value<?>> get(String key, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException, NotAllKvServersAreUpException, QuorumNotApplicableException, ReplicationFactorNotApplicableException {
 
-        /*
-            TODO implement...
-                ALL,
-                QUORUM, // Quorum = (sum_of_replication_factors / 2) + 1
-                REPLICATION_FACTOR,
-         */
 
         if (consistencyLevel == ConsistencyLevel.ONE) {
 
+            // check servers state
             final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
             if (r == null || r.isEmpty()) {
                 throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
             }
 
+
+            // pick correct ones and process
             final Pair<KvServerClient, KvServerContactPoint> selection = SetUtils.pickOneRandomly(r);
 
             System.out.println("will execute get operation against kv-server: " + selection.getValue1());
@@ -289,22 +298,140 @@ public class KvBroker {
             final KvServerClient client = selection.getValue0();
             return getOperation(client, key);
 
+        } else if (consistencyLevel == ConsistencyLevel.ALL) {
+
+            // check servers state
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r == null || r.isEmpty()) {
+                throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
+            }
+            if (r.size() < kvServerClientsByContactPoint.size()) {
+                throw new NotAllKvServersAreUpException("only: " + r.size() + " servers are up, which you have registered: " + kvServerClientsByContactPoint.size() + " in total");
+            }
+
+
+            // pick correct ones and process
+            // todo SEARCH-GET STRATEGY :: firstFoundFirstReturned or find all and merge based on create timestamp and return the most fresh ???
+            boolean firstFoundFirstReturned = true;
+
+            boolean foundResult = false;
+            Value<?> result = null;
+
+            for (Pair<KvServerClient, KvServerContactPoint> selection : r) {
+
+                final KvServerClient client = selection.getValue0();
+                Optional<Value<?>> searchResult = getOperation(client, key);
+
+                if (firstFoundFirstReturned) {
+
+                    if (searchResult.isPresent()) {
+                        result = searchResult.get();
+                        foundResult = true;
+                        break;
+                    }
+
+                } else {
+                    throw new UnsupportedOperationException("TODO::SEARCH-GET STRATEGY");
+                }
+
+            }
+
+            return !foundResult ? Optional.empty() : Optional.of(result);
+
+        } else if (consistencyLevel == ConsistencyLevel.QUORUM) {
+
+            // check servers state
+            final int quorum = ConsistencyLevel.calculateQuorum(this.replicationFactor);
+
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (r == null || r.isEmpty()) {
+                throw new NotAtLeastOneKvServerUpException("not at least one kv-server is up and running");
+            }
+            if (r.size() < quorum) {
+                throw new QuorumNotApplicableException("quorum: " + quorum + " for replicationFactor: " + replicationFactor + " is not applicable, due to limited up servers: " + r.size());
+            }
+
+
+            // pick correct ones and process
+            // todo SEARCH-GET STRATEGY :: firstFoundFirstReturned or find all and merge based on create timestamp and return the most fresh ???
+            boolean firstFoundFirstReturned = true;
+
+            boolean foundResult = false;
+            Value<?> result = null;
+
+            for (Pair<KvServerClient, KvServerContactPoint> selection : r) {
+
+                final KvServerClient client = selection.getValue0();
+                Optional<Value<?>> searchResult = getOperation(client, key);
+
+                if (firstFoundFirstReturned) {
+
+                    if (searchResult.isPresent()) {
+                        result = searchResult.get();
+                        foundResult = true;
+                        break;
+                    }
+
+                } else {
+                    throw new UnsupportedOperationException("TODO::SEARCH-GET STRATEGY");
+                }
+
+            }
+
+            return !foundResult ? Optional.empty() : Optional.of(result);
+
+        } else if (consistencyLevel == ConsistencyLevel.REPLICATION_FACTOR) {
+
+
+            // check servers state
+            final Set<Pair<KvServerClient, KvServerContactPoint>> r = kvServerClientsByServerHealthStateStats.get(KvServerHealthState.UP);
+            if (!this.getReplicationThresholdSatisfied()) {
+                throw new ReplicationFactorNotApplicableException("replication factor: " + replicationFactor + " is not satisfied");
+            }
+
+
+            // pick correct ones and process
+            // todo SEARCH-GET STRATEGY :: firstFoundFirstReturned or find all and merge based on create timestamp and return the most fresh ???
+            boolean firstFoundFirstReturned = true;
+
+            boolean foundResult = false;
+            Value<?> result = null;
+
+            for (Pair<KvServerClient, KvServerContactPoint> selection : r) {
+
+                final KvServerClient client = selection.getValue0();
+                Optional<Value<?>> searchResult = getOperation(client, key);
+
+                if (firstFoundFirstReturned) {
+
+                    if (searchResult.isPresent()) {
+                        result = searchResult.get();
+                        foundResult = true;
+                        break;
+                    }
+
+                } else {
+                    throw new UnsupportedOperationException("TODO::SEARCH-GET STRATEGY");
+                }
+
+            }
+
+            return !foundResult ? Optional.empty() : Optional.of(result);
 
         } else {
-
-            // TODO...
-            throw new UnsupportedOperationException("TODO");
-
+            throw new IllegalStateException("consistency level provided not supported!");
         }
-
     }
 
-    // todo query
 
     public boolean delete(String key, ConsistencyLevel consistencyLevel) {
         //TODO
         throw new UnsupportedOperationException("TODO");
     }
+
+
+    // todo query
+
 
     public Map<KvServerContactPoint, KvServerClient> getKvServerClientsByContactPoint() {
         return Collections.unmodifiableMap(kvServerClientsByContactPoint);
@@ -373,17 +500,23 @@ public class KvBroker {
         }
     }
 
+    private void putOperation(KvServerClient kvServerClient, String key, Value<?> value) throws IOException, ErrorReceivedFromKvServerException {
+        String serializedValue = value.asString();
+        putOperation(kvServerClient, key, serializedValue);
+    }
+
     private void putOperation(KvServerClient kvServerClient, String key, String value) throws IOException, ErrorReceivedFromKvServerException {
         System.out.println("will put key: " + key + " --- value: " + value);
 
         final String response = kvServerClient.sendMessage(Operations.PUT.getMsgOp() + " " + key + ": " + value);
 
         if (!ProtocolConstants.OKAY_RESP.equals(response)) {
-            throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response);
+            throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response, response);
         }
     }
 
-    private Optional<String> getOperation(KvServerClient kvServerClient, String key) throws IOException, ErrorReceivedFromKvServerException {
+
+    private Optional<Value<?>> getOperation(KvServerClient kvServerClient, String key) throws IOException, ErrorReceivedFromKvServerException {
         System.out.println("will get value for key: " + key);
 
         final String response = kvServerClient.sendMessage(Operations.GET.getMsgOp() + " " + key);
@@ -393,11 +526,18 @@ public class KvBroker {
             String prefix = ProtocolConstants.OKAY_RESP + "#";
             String r = response.substring(prefix.length());
 
-            return Optional.of(r);
+            try {
+                Value<?> v = DatatypesAntlrParser.process(r);
+                return Optional.of(v);
+            } catch (ParsingException e) {
+                KvInfraBadStateException error = new KvInfraBadStateException("kv-server db in bad state:: could not parse the response received, which should be valid, most probably malformed data entered to kv-server");
+                throw new UncheckedKvInfraBadStateException(error);
+            }
+
         } else if (ProtocolConstants.NOT_FOUND_RESP.equals(response)) {
             return Optional.empty();
         } else {
-            throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response);
+            throw new ErrorReceivedFromKvServerException("error response received from kv-server: " + response, response);
         }
 
     }

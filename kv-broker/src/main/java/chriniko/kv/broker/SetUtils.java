@@ -21,16 +21,16 @@ public class SetUtils {
 
         while (selected.size() < n) {
 
-            int randomIdx = ThreadLocalRandom.current().nextInt(s.size());
+            final int randomIdx = ThreadLocalRandom.current().nextInt(s.size());
+            final Iterator<T> iterator = s.iterator();
 
-            Iterator<T> iterator = s.iterator();
             T selection;
 
             int i = 0;
             while (iterator.hasNext() && selected.size() < n) {
                 selection = iterator.next();
 
-                if (i == randomIdx) {
+                if (i++ == randomIdx) {
                     selected.add(selection);
                 }
 
@@ -45,9 +45,9 @@ public class SetUtils {
             throw new IllegalArgumentException();
         }
 
-        int randomIdx = ThreadLocalRandom.current().nextInt(s.size());
+        final int randomIdx = ThreadLocalRandom.current().nextInt(s.size());
+        final Iterator<T> iterator = s.iterator();
 
-        Iterator<T> iterator = s.iterator();
         T selection;
 
         int i = 0;

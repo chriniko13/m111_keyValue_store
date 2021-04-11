@@ -172,8 +172,7 @@ class CheckKvServersHealthWorkerTest {
 
         // when (also another server goes down, so 2 are down out of 3, replication factor is 2, so it should NOT be satisfied)
         w.pauseCheck();
-        while (!w.isPaused());
-
+        while (!w.isPaused()); // we want to achieve happens before relationship for mockito success
 
         Mockito.reset(kvServerClient2);
         Mockito.when(kvServerClient2.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
