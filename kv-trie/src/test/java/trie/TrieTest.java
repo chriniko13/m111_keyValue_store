@@ -2,6 +2,7 @@ package trie;
 
 import chriniko.kv.trie.Trie;
 import chriniko.kv.trie.TrieEntry;
+import chriniko.kv.trie.TrieNode;
 import lombok.ToString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -60,7 +61,12 @@ class TrieTest {
 
         trie.insert("bear", new Record());
         trie.insert("bell", new Record());
-        trie.insert("bid", new Record());
+
+        TrieNode<Record> justInsertedNode = trie.insert("bid", new Record());
+        assertEquals("bid", justInsertedNode.getData().key);
+        assertNotNull(justInsertedNode.getData().value);
+        assertEquals("bid", justInsertedNode.getPrefix());
+        assertTrue(justInsertedNode.isCompleteWord());
 
         // when
         Optional<Record> r = trie.find("bear");

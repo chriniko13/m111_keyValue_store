@@ -1,6 +1,7 @@
 package chriniko.kv.broker.error.response;
 
 import chriniko.kv.broker.error.KvInfraException;
+import chriniko.kv.protocol.ErrorTypeConstants;
 import lombok.Getter;
 
 public class ErrorReceivedFromKvServerException extends KvInfraException {
@@ -11,5 +12,9 @@ public class ErrorReceivedFromKvServerException extends KvInfraException {
     public ErrorReceivedFromKvServerException(String msg, String serverResponse) {
         super(msg);
         this.serverResponse = serverResponse;
+    }
+
+    public boolean isParsingError() {
+        return serverResponse.contains(ErrorTypeConstants.PARSING_ERROR.name());
     }
 }

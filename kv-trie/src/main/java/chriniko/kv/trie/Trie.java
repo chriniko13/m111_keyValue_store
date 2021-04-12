@@ -19,7 +19,7 @@ public class Trie<T extends TrieEntry<?>> {
     }
 
     // Note: The time complexity is O(n), where n represents the length of the key.
-    public void insert(String key, T data) {
+    public TrieNode<T> insert(String key, T data) {
 
         final StringBuilder sb = new StringBuilder();
 
@@ -49,6 +49,8 @@ public class Trie<T extends TrieEntry<?>> {
         current.setPrefix(s);
         current.setData(data);
         data.setKey(s);
+
+        return current;
     }
 
 

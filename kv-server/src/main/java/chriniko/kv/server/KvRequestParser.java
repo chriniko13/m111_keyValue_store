@@ -2,15 +2,15 @@ package chriniko.kv.server;
 
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.error.ParsingException;
-import chriniko.kv.datatypes.error.UncheckedParsingException;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
+import chriniko.kv.protocol.ErrorTypeConstants;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class KvParser {
+public class KvRequestParser {
 
 
     public void process(final String serverName, final ByteBuffer byteBuffer, final KvStorageEngine kvStorageEngine) {
@@ -21,7 +21,7 @@ public class KvParser {
             e.printStackTrace(System.err);
             System.err.println("error occurred in KvParser#process, msg: " + e.getMessage());
 
-            String errorResp = ProtocolConstants.ERROR_RESP.apply(e.getMessage());
+            String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.PARSING_ERROR, e.getMessage());
             writeResponseMessage(byteBuffer, errorResp);
         }
 
@@ -75,7 +75,7 @@ public class KvParser {
             } catch (ParsingException e) {
 
                 System.err.println("parsing error occurred, msg: " + e.getMessage());
-                String errorResp = ProtocolConstants.ERROR_RESP.apply("[parsingError]" + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.PARSING_ERROR, e.getMessage());
                 writeResponseMessage(byteBuffer, errorResp);
 
             }
@@ -108,18 +108,32 @@ public class KvParser {
 
         } else if (messageReceivedFromBroker.startsWith(Operations.DELETE.getMsgOp())) {
 
-            // TODO validate string received if is valid... (RETURN ERROR)
+            final String[] s = messageReceivedFromBroker.split(" ");
+            final String operation = s[0];
+            final String key = s[1];
 
-            //todo
+            System.out.println("delete operation: " + operation + " --- key: " + key);
 
-            String okayResp = ProtocolConstants.OKAY_RESP;
-            System.out.println("WILL REPLY WITH: " + okayResp);
-            writeResponseMessage(byteBuffer, okayResp);
+            final Value<?> result = kvStorageEngine.remove(key);
+            if (result != null) {
+                // delete success
+                String justDeletedSerializedRecord = result.asString();
 
+                final String okayResp = ProtocolConstants.OKAY_RESP + "#" + justDeletedSerializedRecord;
+                System.out.println("WILL REPLY WITH: " + okayResp);
+                writeResponseMessage(byteBuffer, okayResp);
+
+            } else {
+                // no entry exists with provided key
+
+                final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                System.out.println("WILL REPLY WITH: " + notFoundResp);
+                writeResponseMessage(byteBuffer, notFoundResp);
+
+            }
 
         } else if (messageReceivedFromBroker.startsWith(Operations.QUERY.getMsgOp())) {
 
-            // TODO validate string received if is valid... (RETURN ERROR)
 
             //todo
 

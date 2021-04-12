@@ -1,6 +1,6 @@
 package chriniko.kv.protocol;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public class ProtocolConstants {
 
@@ -14,6 +14,7 @@ public class ProtocolConstants {
 
     public static final String UNKNOWN_COMMAND_RESP = "UNKNOWN_COMMAND_RECEIVED";
     public static final String NOT_FOUND_RESP = "NOT_FOUND";
-    public static final Function<String, String> ERROR_RESP = errorCode -> "ERROR: " + errorCode;
+
+    public static final BiFunction<ErrorTypeConstants, String, String> ERROR_RESP = (errorType, errorMsg) -> "ERROR[" + errorType + "] --- message: " + errorMsg;
 
 }

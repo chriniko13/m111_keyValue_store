@@ -1,5 +1,6 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.server.KvServer;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,12 +34,14 @@ public class KvBrokerPutOperationTest {
     void putWorksAsExpected() throws Exception {
 
         // given (having started the servers)
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
         final CountDownLatch serversReady = new CountDownLatch(3);
 
         final KvServer kvServer1 = KvServer.create("server1");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer1.run("localhost", 1721, serversReady::countDown);
+                kvServer1.run("localhost", availablePorts.get(0), serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
@@ -46,7 +50,7 @@ public class KvBrokerPutOperationTest {
         final KvServer kvServer2 = KvServer.create("server2");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer2.run("localhost", 1722, serversReady::countDown);
+                kvServer2.run("localhost", availablePorts.get(1), serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
@@ -55,7 +59,7 @@ public class KvBrokerPutOperationTest {
         final KvServer kvServer3 = KvServer.create("server3");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer3.run("localhost", 1723, serversReady::countDown);
+                kvServer3.run("localhost", availablePorts.get(2), serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
@@ -72,9 +76,9 @@ public class KvBrokerPutOperationTest {
 
         kvBroker.start(
                 Arrays.asList(
-                        new KvServerContactPoint("server1", "localhost", 1721),
-                        new KvServerContactPoint("server2", "localhost", 1722),
-                        new KvServerContactPoint("server3", "localhost", 1723)
+                        new KvServerContactPoint("server1", "localhost", availablePorts.get(0)),
+                        new KvServerContactPoint("server2", "localhost", availablePorts.get(1)),
+                        new KvServerContactPoint("server3", "localhost", availablePorts.get(2))
                 ),
                 null,
                 false,
@@ -190,7 +194,84 @@ public class KvBrokerPutOperationTest {
     // TODO put test consistency levels and if failures work as expected....use jacoco
 
 
-    // TODO parsing error.....
+    @Test
+    void putRaw_parsingError_WorksAsExpected() throws Exception {
+
+
+        // given (having started the servers)
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
+        final CountDownLatch serversReady = new CountDownLatch(3);
+
+        final KvServer kvServer1 = KvServer.create("server1");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer1.run("localhost", availablePorts.get(0), serversReady::countDown);
+            } catch (IOException e) {
+                fail(e);
+            }
+        }, workerPool);
+
+        final KvServer kvServer2 = KvServer.create("server2");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer2.run("localhost", availablePorts.get(1), serversReady::countDown);
+            } catch (IOException e) {
+                fail(e);
+            }
+        }, workerPool);
+
+        final KvServer kvServer3 = KvServer.create("server3");
+        CompletableFuture.runAsync(() -> {
+            try {
+                kvServer3.run("localhost", availablePorts.get(2), serversReady::countDown);
+            } catch (IOException e) {
+                fail(e);
+            }
+        }, workerPool);
+
+
+        boolean reachedZero = serversReady.await(15, TimeUnit.SECONDS);
+        if (!reachedZero) fail("servers could not run!");
+
+
+        // given (start the broker)
+        final int replicationFactor = 2;
+        final KvBroker kvBroker = new KvBroker();
+
+        kvBroker.start(
+                Arrays.asList(
+                        new KvServerContactPoint("server1", "localhost", availablePorts.get(0)),
+                        new KvServerContactPoint("server2", "localhost", availablePorts.get(1)),
+                        new KvServerContactPoint("server3", "localhost", availablePorts.get(2))
+                ),
+                null,
+                false,
+                replicationFactor,
+                null
+        );
+
+
+
+        // =====================================================================================================================
+        // when
+        try {
+            kvBroker.putRaw("sample-key", "{\"_name\": 123", ConsistencyLevel.ALL);
+        } catch (ErrorReceivedFromKvServerException e) {
+
+            // then
+            assertTrue(e.isParsingError());
+
+        }
+
+
+
+        // clear
+        kvBroker.stop();
+        kvServer1.stop();
+        kvServer2.stop();
+        kvServer3.stop();
+    }
 
 
 

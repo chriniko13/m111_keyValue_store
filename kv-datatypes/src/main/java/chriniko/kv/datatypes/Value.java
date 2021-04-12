@@ -1,6 +1,7 @@
 package chriniko.kv.datatypes;
 
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 /*
@@ -25,6 +26,7 @@ import lombok.Getter;
  */
 
 @Getter
+@EqualsAndHashCode(of = {"key"})
 public abstract class Value<T> {
 
     protected final String key;

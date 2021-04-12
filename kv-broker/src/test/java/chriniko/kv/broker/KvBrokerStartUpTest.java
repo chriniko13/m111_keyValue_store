@@ -9,10 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -38,6 +35,8 @@ public class KvBrokerStartUpTest {
     void startWorksAsExpected() throws Exception {
 
         // given (having started the servers)
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
         int recordsInserted = 10;
 
         final CountDownLatch serversReady = new CountDownLatch(3);
@@ -45,7 +44,7 @@ public class KvBrokerStartUpTest {
         final KvServer kvServer1 = KvServer.create("server1");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer1.run("localhost", 1711, serversReady::countDown);
+                kvServer1.run("localhost", availablePorts.get(0), serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
@@ -54,7 +53,7 @@ public class KvBrokerStartUpTest {
         final KvServer kvServer2 = KvServer.create("server2");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer2.run("localhost", 1712, serversReady::countDown);
+                kvServer2.run("localhost", availablePorts.get(1), serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
@@ -63,7 +62,7 @@ public class KvBrokerStartUpTest {
         final KvServer kvServer3 = KvServer.create("server3");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer3.run("localhost", 1713, serversReady::countDown);
+                kvServer3.run("localhost", availablePorts.get(2), serversReady::countDown);
             } catch (IOException e) {
                 fail(e);
             }
@@ -82,9 +81,9 @@ public class KvBrokerStartUpTest {
             try {
                 kvBroker.start(
                         Arrays.asList(
-                                new KvServerContactPoint("server1", "localhost", 1711),
-                                new KvServerContactPoint("server2", "localhost", 1712),
-                                new KvServerContactPoint("server3", "localhost", 1713)
+                                new KvServerContactPoint("server1", "localhost", availablePorts.get(0)),
+                                new KvServerContactPoint("server2", "localhost", availablePorts.get(1)),
+                                new KvServerContactPoint("server3", "localhost", availablePorts.get(2))
                         ),
                         null,
                         true,
@@ -115,7 +114,7 @@ public class KvBrokerStartUpTest {
                             .map(KvServerContactPoint::getPort)
                             .collect(Collectors.toSet());
 
-                    Set<Integer> expected = Set.of(1711, 1712, 1713);
+                    Set<Integer> expected = Set.of(availablePorts.get(0), availablePorts.get(1), availablePorts.get(2));
                     assertEquals(expected, kvServerContactPoints);
 
 

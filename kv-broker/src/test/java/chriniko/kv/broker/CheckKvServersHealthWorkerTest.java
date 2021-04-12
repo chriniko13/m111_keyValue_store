@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -38,11 +39,13 @@ class CheckKvServersHealthWorkerTest {
     void workerWorksAsExpected() throws Exception {
 
         // given
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
         final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClientsByContactPoint
                 = new ConcurrentHashMap<>();
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("server1", "localhost", 8090), kvServerClient);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("server2", "localhost", 8091), kvServerClient2);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("server3", "localhost", 8092), kvServerClient3);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server1", "localhost", availablePorts.get(0)), kvServerClient);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server2", "localhost", availablePorts.get(1)), kvServerClient2);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server3", "localhost", availablePorts.get(2)), kvServerClient3);
 
 
         Mockito.when(kvServerClient.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))
@@ -120,11 +123,13 @@ class CheckKvServersHealthWorkerTest {
     void workerMaintainsReplicationFactorIfSatisfiedStateWorksAsExpected() throws Exception {
 
         // given
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
         final ConcurrentHashMap<KvServerContactPoint, KvServerClient> kvServerClientsByContactPoint
                 = new ConcurrentHashMap<>();
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("server1", "localhost", 8090), kvServerClient);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("server2", "localhost", 8091), kvServerClient2);
-        kvServerClientsByContactPoint.put(new KvServerContactPoint("server3", "localhost", 8092), kvServerClient3);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server1", "localhost", availablePorts.get(0)), kvServerClient);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server2", "localhost", availablePorts.get(1)), kvServerClient2);
+        kvServerClientsByContactPoint.put(new KvServerContactPoint("server3", "localhost", availablePorts.get(2)), kvServerClient3);
 
 
         Mockito.when(kvServerClient.sendMessage(Operations.HEALTH_CHECK.getMsgOp()))

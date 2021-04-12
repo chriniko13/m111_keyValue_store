@@ -17,20 +17,20 @@ public class KvServer {
     private static final ConcurrentHashMap<SocketChannel, String /*address*/> clientAddressesBySockets = new ConcurrentHashMap<>();
 
     private final String serverName;
-    private final KvParser kvParser;
+    private final KvRequestParser kvRequestParser;
     private final KvStorageEngine kvStorageEngine;
 
     private ServerSocketChannel serverSocket;
 
 
-    private KvServer(String serverName, KvParser kvParser, KvStorageEngine kvStorageEngine) {
+    private KvServer(String serverName, KvRequestParser kvRequestParser, KvStorageEngine kvStorageEngine) {
         this.serverName = serverName;
-        this.kvParser = kvParser;
+        this.kvRequestParser = kvRequestParser;
         this.kvStorageEngine = kvStorageEngine;
     }
 
     public static KvServer create(String serverName) {
-        return new KvServer(serverName, new KvParser(),  new KvStorageEngine());
+        return new KvServer(serverName, new KvRequestParser(),  new KvStorageEngine());
     }
 
     public KvStorageEngine getStorageEngine() {
@@ -160,7 +160,7 @@ public class KvServer {
             sockets.remove(socket);
         }
 
-        kvParser.process(serverName, byteBuffer, kvStorageEngine);
+        kvRequestParser.process(serverName, byteBuffer, kvStorageEngine);
 
         socket.configureBlocking(false); // Required, socket should also be NonBlocking
 

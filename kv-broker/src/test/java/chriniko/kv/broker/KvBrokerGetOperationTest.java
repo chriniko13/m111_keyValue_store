@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.*;
 
@@ -35,12 +36,14 @@ public class KvBrokerGetOperationTest {
     void getWorksAsExpected() throws Exception {
 
         // given (having started the servers)
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
         final CountDownLatch serversReady = new CountDownLatch(3);
 
         final KvServer kvServer1 = KvServer.create("server1");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer1.run("localhost", 1741, serversReady::countDown);
+                kvServer1.run("localhost", availablePorts.get(0), serversReady::countDown);
             } catch (IOException e) {
                 e.printStackTrace(System.err);
                 fail(e);
@@ -50,7 +53,7 @@ public class KvBrokerGetOperationTest {
         final KvServer kvServer2 = KvServer.create("server2");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer2.run("localhost", 1742, serversReady::countDown);
+                kvServer2.run("localhost", availablePorts.get(1), serversReady::countDown);
             } catch (IOException e) {
                 e.printStackTrace(System.err);
                 fail(e);
@@ -60,7 +63,7 @@ public class KvBrokerGetOperationTest {
         final KvServer kvServer3 = KvServer.create("server3");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer3.run("localhost", 1743, serversReady::countDown);
+                kvServer3.run("localhost", availablePorts.get(2), serversReady::countDown);
             } catch (IOException e) {
                 e.printStackTrace(System.err);
                 fail(e);
@@ -82,9 +85,9 @@ public class KvBrokerGetOperationTest {
             try {
                 kvBroker.start(
                         Arrays.asList(
-                                new KvServerContactPoint("server1", "localhost", 1741),
-                                new KvServerContactPoint("server2", "localhost", 1742),
-                                new KvServerContactPoint("server3", "localhost", 1743)
+                                new KvServerContactPoint("server1", "localhost", availablePorts.get(0)),
+                                new KvServerContactPoint("server2", "localhost", availablePorts.get(1)),
+                                new KvServerContactPoint("server3", "localhost", availablePorts.get(2))
                         ),
                         null,
                         false,
@@ -147,12 +150,14 @@ public class KvBrokerGetOperationTest {
     void getWorksAsExpected_whenNotEntryExists_NotFoundReply() throws Exception {
 
         // given (having started the servers)
+        LinkedList<Integer> availablePorts = AvailablePortInfra.availablePorts(3);
+
         final CountDownLatch serversReady = new CountDownLatch(3);
 
         final KvServer kvServer1 = KvServer.create("server1");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer1.run("localhost", 1744, serversReady::countDown);
+                kvServer1.run("localhost", availablePorts.get(0), serversReady::countDown);
             } catch (IOException e) {
                 e.printStackTrace(System.err);
                 fail(e);
@@ -162,7 +167,7 @@ public class KvBrokerGetOperationTest {
         final KvServer kvServer2 = KvServer.create("server2");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer2.run("localhost", 1745, serversReady::countDown);
+                kvServer2.run("localhost", availablePorts.get(1), serversReady::countDown);
             } catch (IOException e) {
                 e.printStackTrace(System.err);
                 fail(e);
@@ -172,7 +177,7 @@ public class KvBrokerGetOperationTest {
         final KvServer kvServer3 = KvServer.create("server3");
         CompletableFuture.runAsync(() -> {
             try {
-                kvServer3.run("localhost", 1746, serversReady::countDown);
+                kvServer3.run("localhost", availablePorts.get(2), serversReady::countDown);
             } catch (IOException e) {
                 e.printStackTrace(System.err);
                 fail(e);
@@ -194,9 +199,9 @@ public class KvBrokerGetOperationTest {
             try {
                 kvBroker.start(
                         Arrays.asList(
-                                new KvServerContactPoint("server1", "localhost", 1744),
-                                new KvServerContactPoint("server2", "localhost", 1745),
-                                new KvServerContactPoint("server3", "localhost", 1746)
+                                new KvServerContactPoint("server1", "localhost", availablePorts.get(0)),
+                                new KvServerContactPoint("server2", "localhost", availablePorts.get(1)),
+                                new KvServerContactPoint("server3", "localhost", availablePorts.get(2))
                         ),
                         null,
                         false,

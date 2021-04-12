@@ -37,7 +37,7 @@ public class DatatypesAntlrParserComplexTest {
 
         // =====================================================
         // when
-        input = "{ \"_myList\" : [ { \"_fn3\" : { \"_nf4\" : { \"_float23\" : 2.34 } } } ; { \"_strTemp\" : \"allGood allFine all work\" } ] }";
+        input = "{ \"_myList\" : [ { \"_fn3\" : { \"_nf4\" : { \"_float23\" : 2.34 } } } ; { \"_strTemp\" : \"allGood allFine all work\" } ; { \"_fn32\" : { \"_nf42\" : { \"_someOtherStr\" : \"someOtherStrValue\" } } } ] }";
         r = DatatypesAntlrParser.process(input);
 
         // then
@@ -46,7 +46,7 @@ public class DatatypesAntlrParserComplexTest {
         assertTrue(r instanceof ListValue);
 
         listValue = (ListValue) r;
-        assertEquals(2, listValue.getValue().size());
+        assertEquals(3, listValue.getValue().size());
 
         assertEquals(
                 input,
