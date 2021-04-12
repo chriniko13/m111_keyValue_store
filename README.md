@@ -30,29 +30,30 @@ The kv consists from the following modules:
     * Nested value: [NestedValue.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/NestedValue.java)
     * List value: [ListValue.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/ListValue.java)
     
-  
-    For this, at first a custom parser has been created to support the initial specification for the datatypes as explained in the
-    assignment documentation, so the following code infra has been created: [DatatypesParser.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/parser/DatatypesParser.java)
-    which testing it I have seen that the complexity has risen dramatically (not maintainable code and in the future if we want
-    a future request things will be hard).
-  
-    So for this reason, I pulled ANTLR4 (https://www.antlr.org/) to the game in
-    order to make it extensible/more robust for the future (my motivation is to continue working on this KV after the class also)
-    
-    So I defined with changing a little the grammar/definition for the datatypes, where someone can see it here: [KvDatatypes.g4](kv-datatypes/src/main/antlr4/chriniko/kv/datatypes/KvDatatypes.g4)
-    and by executing `mvn org.antlr:antlr4-maven-plugin:antlr4 -pl kv-datatypes/`
-    `KvDatatypesLexer`, `KvDatatypesParser` and `KvDatatypesBaseListener` has been generated:
-  
-    ![](kv-datatypes/antlr4_generated_code.png)
-  
-    where I have extended the `KvDatatypesBaseListener` with [KvDatatypesAssemblyListener.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/grammar/KvDatatypesAssemblyListener.java) in order to write the parsing logic,
-     `f: (String) => Value<?>`
-    so now we have an extensible grammar for future use.
 
-   So we can understand that we can support very complex data representations, such as:
-      ```text
-            { "_myList" : [ { "_fn3" : { "_nf4" : { "_float23" : 2.34 } } } ; { "_strTemp" : "allGood allFine all work" } ; { "_fn32" : { "_nf42" : { "_someOtherStr" : "someOtherStrValue" } } } ] }
-      ```
+  
+  For this, at first a custom parser has been created to support the initial specification for the datatypes as explained in the
+  assignment documentation, so the following code infra has been created: [DatatypesParser.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/parser/DatatypesParser.java)
+  which testing it I have seen that the complexity has risen dramatically (not maintainable code and in the future if we want
+  a future request things will be hard).
+  
+  So for this reason, I pulled ANTLR4 (https://www.antlr.org/) to the game in
+  order to make it extensible/more robust for the future (my motivation is to continue working on this KV after the class also)
+    
+  So I defined with changing a little the grammar/definition for the datatypes, where someone can see it here: [KvDatatypes.g4](kv-datatypes/src/main/antlr4/chriniko/kv/datatypes/KvDatatypes.g4)
+  and by executing `mvn org.antlr:antlr4-maven-plugin:antlr4 -pl kv-datatypes/`
+  `KvDatatypesLexer`, `KvDatatypesParser` and `KvDatatypesBaseListener` has been generated:
+  
+  ![](kv-datatypes/antlr4_generated_code.png)
+  
+  where I have extended the `KvDatatypesBaseListener` with [KvDatatypesAssemblyListener.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/grammar/KvDatatypesAssemblyListener.java) in order to write the parsing logic,
+  `f: (String) => Value<?>`
+  so now we have an extensible grammar for future use.
+
+  So we can understand that we can support very complex data representations, such as:
+  ```text
+        { "_myList" : [ { "_fn3" : { "_nf4" : { "_float23" : 2.34 } } } ; { "_strTemp" : "allGood allFine all work" } ; { "_fn32" : { "_nf42" : { "_someOtherStr" : "someOtherStrValue" } } } ] }
+  ```
 
   ![](kv_datatypes_depends.png)
 
@@ -74,6 +75,9 @@ The kv consists from the following modules:
 
 
 
+* [kv-protocol](kv-protocol/README.md) contains common code which is used for the communication between `kv-server` and `kv-broker`.
+
+  ![](kv_protocol_depends.png)
 
 
 ### Run all tests
