@@ -111,43 +111,6 @@ public class KvDatatypesLogListener extends KvDatatypesBaseListener {
     }
 
 
-
-    @Override
-    public void enterListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
-        System.out.println("enterListBodyStartNode: " + ctx.getText());
-        System.out.println();
-    }
-
-    @Override
-    public void exitListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
-        System.out.println("exitListBodyStartNode: " + ctx.getText());
-        System.out.println();
-    }
-
-    @Override
-    public void enterListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
-        System.out.println("enterListBodyMidNode: " + ctx.getText());
-        System.out.println();
-    }
-
-    @Override
-    public void exitListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
-        System.out.println("exitListBodyMidNode: " + ctx.getText());
-        System.out.println();
-    }
-
-    @Override
-    public void enterListBodyEndNode(KvDatatypesParser.ListBodyEndNodeContext ctx) {
-        System.out.println("enterListBodyEndNode: " + ctx.getText());
-        System.out.println();
-    }
-
-    @Override
-    public void exitListBodyEndNode(KvDatatypesParser.ListBodyEndNodeContext ctx) {
-        System.out.println("exitListBodyEndNode: " + ctx.getText());
-        System.out.println();
-    }
-
     // --- value
 
     @Override

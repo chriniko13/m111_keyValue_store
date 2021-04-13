@@ -1,5 +1,1 @@
-{ "_contents" : [ { "_level" : 6 } ; { "_street" : "0468 Shanda Harbors, South Earleneview, WI 26933-1884" } ; { "_name" : "dallas.marvin" } ; { "_age" : 98 } ; { "_height" : 1.5102642 } ] }
-
-
-
-
+{ "_studentDetails" : [ { "_username" : "chriniko" } ; { "_email" : "chriniko" } ; { "_lessonsNeeded" : { "_semester3" : [ { "_les3_01" : "compilers" } ; { "_semester2" : { "_semester1" : { "_notPassed" : [ { "_les1_01" : "algos" } ; { "_les1_02" : "os" } ] } } } ] } } ; { "_address" : [ { "_street" : "Panepistimioupoli 123, Kesariani" } ; { "_postCode": "16121" } ;  { "_city" : "Athens" } ; { "_country": "Greece" } ] } ; { "_name" : [ { "_firstname" : "Nikolaos" } ; { "_surname" : "Christidis" } ] } ] }

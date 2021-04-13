@@ -92,6 +92,8 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
             throw new UncheckedParsingException(parsingException);
         }
 
+
+
         // just pop the only one value in stack which is the result
         if (processedValuesStack.size() != 1) {
             throw new ParsingInfraException("processedValuesStack.size() != 1");
@@ -138,7 +140,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
                 String key = nestedEntriesKeysStack.pop();
 
-                if (currentListValue != null) {
+                if (currentListValue != null) { // if the nested entry occurred inside a list value then...
 
                     Value<?> v = processedValuesForCurrentListStack.pop();
                     NestedValue nestedValue = new NestedValue(key, v);
@@ -152,7 +154,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
                 }
 
             } else {
-                throw new IllegalStateException();
+                throw new ParsingInfraException("parser in incorrect state!");
             }
         }
     }
@@ -160,18 +162,11 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     // --- listEntry
 
-    @Override
-    public void enterListEntry(KvDatatypesParser.ListEntryContext ctx) {
-    }
-
-    @Override
-    public void exitListEntry(KvDatatypesParser.ListEntryContext ctx) {
-    }
 
 
     // start
     @Override
-    public void enterListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
+    public void enterListEntry(KvDatatypesParser.ListEntryContext ctx) {
         System.out.println("enterListBodyStartNode");
 
         // save state if before exiting from a list value we found another one list value
@@ -180,57 +175,49 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         }
 
         // re-init for start processing the list
-        currentListValue = new ListValue(currentKey);
+        String key = ctx.key().getText();
+        key = key.replace("\"", "");
+
+        currentListValue = new ListValue(key);
         processedValuesForCurrentListStack = new ArrayDeque<>();
     }
 
     @Override
-    public void exitListBodyStartNode(KvDatatypesParser.ListBodyStartNodeContext ctx) {
+    public void exitListEntry(KvDatatypesParser.ListEntryContext ctx) {
         System.out.println("exitListBodyStartNode");
+        if (currentListValue == null) {
+            throw new ParsingInfraException("parser in incorrect state!");
+        }
+
+
 
         // time to pop all processed values and collect them to a list value
         final ArrayDeque<Value<?>> tempStack = new ArrayDeque<>(); // just create a temp stack to maintain the order
-
         while (!processedValuesForCurrentListStack.isEmpty()) {
             Value<?> v = processedValuesForCurrentListStack.pop();
             tempStack.push(v);
         }
-
         while (!tempStack.isEmpty()) {
             currentListValue.add(tempStack.pop());
         }
 
-        processedValuesStack.push(currentListValue);
 
 
-        // restore state of list value if exists.
+        // restore state of list value if exists and save in the correct structure the processed value.
         if (!listValuesStack.isEmpty()) {
-            Pair<ListValue, ArrayDeque<Value<?>>> popped = listValuesStack.pop();
 
+            final ListValue temp = currentListValue;
+
+            final Pair<ListValue, ArrayDeque<Value<?>>> popped = listValuesStack.pop();
             currentListValue = popped.getValue0();
             processedValuesForCurrentListStack = popped.getValue1();
 
+            processedValuesForCurrentListStack.push(temp);
+
         } else {
+            processedValuesStack.push(currentListValue);
             currentListValue = null;
         }
-    }
-
-    // mid
-    @Override
-    public void enterListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
-    }
-
-    @Override
-    public void exitListBodyMidNode(KvDatatypesParser.ListBodyMidNodeContext ctx) {
-    }
-
-    // end
-    @Override
-    public void enterListBodyEndNode(KvDatatypesParser.ListBodyEndNodeContext ctx) {
-    }
-
-    @Override
-    public void exitListBodyEndNode(KvDatatypesParser.ListBodyEndNodeContext ctx) {
     }
 
     // --- value

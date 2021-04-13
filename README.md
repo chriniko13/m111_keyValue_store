@@ -1,4 +1,4 @@
-### KV In Memo Database (KV stands for Key Value)
+### KV Simple Replication - In Memo Database (KV stands for Key Value)
 
 #### Assignee: nick.christidis@yahoo.com / cs1200005@di.uoa.gr
 
@@ -7,7 +7,7 @@
 ### Description
 
 
-The kv consists from the following modules:
+The `kv-infra` consists from the following modules:
 * [data-injector](data-injector/README.md) which is responsible for producing the data which will be inserted to
   the `kv-server`.
   
@@ -18,7 +18,18 @@ The kv consists from the following modules:
 * [kv-broker](kv-broker/README.md) which is responsible for communicating with the `kv-server` and performing the supported actions
   (get, put, delete, query). A client application, will have as dependency the `kv-broker` to interact with our `kv-server`.
 
+  `kv-broker` has been developed as a library artifact ([KvBrokerApi.java](kv-broker/src/main/java/chriniko/kv/broker/KvBrokerApi.java)) 
+  rather than a command line program which will receive input from the user as described in the assignment documentation.
+
+  So, a third party program (client) if wants to use the `kv-server` should have `kv-broker` as a dependency, run one or more `kv-server`
+  and start the `kv-broker` (inside client program because it has been used as a dependency) pointing to the running `kv-server(s)`.
+  
+  ![](broker_architecture.svg)
+
+
   ![](kv_broker_depends.png)
+
+  TODO mention a good test to see the usage of it....
 
 
 * [kv-datatypes](kv-datatypes/README.md) here are defined the values which are supported from `kv-server`.
@@ -51,9 +62,19 @@ The kv consists from the following modules:
   so now we have an extensible grammar for future use.
 
   So we can understand that we can support very complex data representations, such as:
-  ```text
+  * ```text
         { "_myList" : [ { "_fn3" : { "_nf4" : { "_float23" : 2.34 } } } ; { "_strTemp" : "allGood allFine all work" } ; { "_fn32" : { "_nf42" : { "_someOtherStr" : "someOtherStrValue" } } } ] }
-  ```
+    ```
+
+  * ```text
+        { "_studentDetails" : [ { "_username" : "chriniko" } ; { "_email" : "chriniko" } ; { "_address" : [ { "_street" : "Panepistimioupoli 123, Kesariani" } ; { "_postCode" : "16121" } ; { "_city" : "Athens" } ; { "_country" : "Greece" } ] } ; { "_name" : [ { "_firstname" : "Nikolaos" } ; { "_surname" : "Christidis" } ] } ] }
+    ```
+
+  * ```text
+          { "_n1" : { "_someList" : [ { "_fn3" : { "_nf4" : { "_strTemp" : "allGood" } } } ; { "_n2" : { "_int2" : 2 } } ; { "_p3" : { "_n3List" : [ { "_gn3" : { "_gn4" : { "_gstrTemp" : "allGood" } } } ; { "_gf1" : { "_gf2" : { "_gf3" : { "_gf4" : { "_gfString" : "gfValue" } } } } } ] } } ; { "_n5" : { "_float2" : 2.34 } } ; { "_n71" : { "_n72" : { "_listGh" : [ { "_n3" : { "_n4" : { "_strTemp2" : "allGood" } } } ; { "_f1" : { "_f2" : { "_f3" : { "_f4" : { "_fString" : "fValue" } } } } } ] } } } ] } }
+    ```
+
+  To get a better idea of the supported types, you can check: [DatatypesAntlrParserComplexTest.java](kv-datatypes/src/test/java/chriniko/kv/datatypes/parser/antlr/DatatypesAntlrParserComplexTest.java)
 
   ![](kv_datatypes_depends.png)
 

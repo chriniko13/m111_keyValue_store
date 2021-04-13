@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * The k value is the replication factor, i.e. how many different servers will have the same replicated data.
  */
-public class KvBroker {
+public class KvBroker implements KvBrokerApi {
 
     private static final int CHECK_SERVERS_HEALTH_WORKER_PACING_IN_MS = 1000;
 
@@ -85,6 +85,7 @@ public class KvBroker {
         replicationThresholdSatisfied = new AtomicBoolean();
     }
 
+    @Override
     public void stop() {
         if (!started) {
             throw new KvBrokerInvalidCallException("called stop on not started broker");
@@ -109,6 +110,7 @@ public class KvBroker {
 
     }
 
+    @Override
     public void start(List<KvServerContactPoint> kvServerContactPoints,
                       BufferedReader dataToIndexBufferedReader,
                       boolean injectGeneratedData,
@@ -191,6 +193,7 @@ public class KvBroker {
         System.out.println("start method finished...");
     }
 
+    @Override
     public boolean getReplicationThresholdSatisfied() {
         boolean r = replicationThresholdSatisfied.get();
         if (!r) {
@@ -199,6 +202,7 @@ public class KvBroker {
         return r;
     }
 
+    @Override
     public void put(String key, Value<?> value, ConsistencyLevel consistencyLevel) throws KvServerAvailabilityException, IOException, ErrorReceivedFromKvServerException {
 
         if (consistencyLevel == ConsistencyLevel.ONE) {
@@ -285,6 +289,7 @@ public class KvBroker {
         }
     }
 
+    @Override
     public void putRaw(String key, String value, ConsistencyLevel consistencyLevel) throws KvServerAvailabilityException, IOException, ErrorReceivedFromKvServerException {
 
         if (consistencyLevel == ConsistencyLevel.ONE) {
@@ -371,6 +376,7 @@ public class KvBroker {
         }
     }
 
+    @Override
     public Optional<Value<?>> get(String key, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException, NotAllKvServersAreUpException, QuorumNotApplicableException, ReplicationFactorNotApplicableException {
 
 
@@ -531,6 +537,7 @@ public class KvBroker {
      * @param consistencyLevel
      * @return returns the deleted record if delete was successful (key was an existing one)
      */
+    @Override
     public Optional<Value<?>> delete(String key, ConsistencyLevel consistencyLevel) throws IOException, ErrorReceivedFromKvServerException, NotAtLeastOneKvServerUpException, NotAllKvServersAreUpException, ReplicationFactorNotApplicableException, QuorumNotApplicableException {
 
         if (consistencyLevel == ConsistencyLevel.ONE) {
@@ -671,7 +678,7 @@ public class KvBroker {
     }
 
 
-
+    @Override
     public Optional<Value<?>> query(String key, ConsistencyLevel consistencyLevel) {
 
         // TODO...
@@ -680,6 +687,7 @@ public class KvBroker {
     }
 
 
+    @Override
     public Map<KvServerContactPoint, KvServerClient> getKvServerClientsByContactPoint() {
         return Collections.unmodifiableMap(kvServerClientsByContactPoint);
     }
