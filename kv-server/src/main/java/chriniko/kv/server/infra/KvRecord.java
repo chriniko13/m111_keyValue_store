@@ -2,11 +2,14 @@ package chriniko.kv.server.infra;
 
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.error.ParsingException;
+import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.server.index.KvRecordIndexer;
+import chriniko.kv.trie.Trie;
 import chriniko.kv.trie.TrieEntry;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class KvRecord implements TrieEntry<Value<?>> {
 
@@ -15,6 +18,11 @@ public class KvRecord implements TrieEntry<Value<?>> {
 
     private final Instant createTime;
     private Instant updateTime;
+
+    // --- indexed record data ---
+    private LinkedHashMap<String /*path, eg: address~>street*/, Value<?>> indexedContentsByKeyPath;
+    private Trie<KvIndexedData> indexedContentsByKeyPathTrie;
+
 
     public KvRecord(String key, Value<?> value) {
         this.key = key;
@@ -55,16 +63,32 @@ public class KvRecord implements TrieEntry<Value<?>> {
         updateTime = Instant.now();
     }
 
-
-    private LinkedHashMap<String /*path, eg: address.street*/, Value<?>> indexedContents;
-
     public void indexContents() throws ParsingException {
         String serialized = value.asString();
-        indexedContents = KvRecordIndexer.process(serialized);
+
+        // index contents by key path in map (time complexity: O(1))
+        indexedContentsByKeyPath = KvRecordIndexer.process(serialized);
+
+
+        // index contents by key path in trie (time complexity: O(n) where n is the length of the key path)
+        indexedContentsByKeyPathTrie = new Trie<>();
+        for (Map.Entry<String, Value<?>> entry : indexedContentsByKeyPath.entrySet()) {
+
+            String k = entry.getKey();
+            Value<?> v = entry.getValue();
+            KvIndexedData indexedData = new KvIndexedData(k, v);
+
+            indexedContentsByKeyPathTrie.insert(k, indexedData);
+        }
     }
 
     @Override
-    public LinkedHashMap<String, Value<?>> getIndexedContents() {
-        return indexedContents;
+    public LinkedHashMap<String, Value<?>> getIndexedContentsByKeyPath() {
+        return indexedContentsByKeyPath;
+    }
+
+    @Override
+    public Trie<KvIndexedData> getIndexedContentsByKeyPathTrie() {
+        return indexedContentsByKeyPathTrie;
     }
 }

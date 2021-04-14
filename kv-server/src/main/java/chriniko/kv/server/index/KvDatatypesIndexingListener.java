@@ -22,6 +22,8 @@ import java.util.*;
  */
 public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
+    private static final String KEYPATH_JOINER = "~>";
+
     @Getter
     private boolean errorOccurred = false;
 
@@ -162,16 +164,7 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
             if (!nestedEntriesKeysStack.isEmpty()) {
 
                 // construct key path...
-                final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
-                final StringBuilder sb = new StringBuilder();
-                for (int i=nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
-                    String s = objects[i];
-                    sb.append(s);
-                    if (i != 0) {
-                        sb.append(".");
-                    }
-                }
-                final String keyPath = sb.toString();
+                final String keyPath = constructKeyPath();
                 if (keyPath.isEmpty()) {
                     throw new ParsingInfraException("parser not in correct state");
                 }
@@ -179,33 +172,31 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
                 // time to construct the value and save it
                 final String key = nestedEntriesKeysStack.pop();
+                final Value<?> v;
                 if (currentListValue != null) { // if the nested entry occurred inside a list value then...
 
-                    Value<?> v = processedValuesForCurrentListStack.pop();
-                    System.out.println("NIAOU1"+ v);
-
+                    v = processedValuesForCurrentListStack.pop();
                     NestedValue nestedValue = new NestedValue(key, v);
                     processedValuesForCurrentListStack.push(nestedValue);
 
 
                     // index it
                     indexedValues.put(keyPath, nestedValue);
-                    indexedValues.put(keyPath + "." + v.getKey(), v);
 
                 } else {
 
-                    Value<?> v = processedValuesStack.pop();
-                    System.out.println("NIAOU2"+ v);
-
+                    v = processedValuesStack.pop();
                     NestedValue nestedValue = new NestedValue(key, v);
                     processedValuesStack.push(nestedValue);
 
 
                     // index it
                     indexedValues.put(keyPath, nestedValue);
-                    indexedValues.put(keyPath + "." + v.getKey(), v);
 
                 }
+
+                // index also value
+                indexedValues.put(keyPath + KEYPATH_JOINER + v.getKey(), v);
 
             } else {
                 throw new ParsingInfraException("parser in incorrect state!");
@@ -254,16 +245,7 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         }
 
         // construct key path...
-        final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
-        final StringBuilder sb = new StringBuilder();
-        for (int i=nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
-            String s = objects[i];
-            sb.append(s);
-            if (i != 0) {
-                sb.append(".");
-            }
-        }
-        final String keyPath = sb.toString();
+        final String keyPath = constructKeyPath();
 
         // index it
         if (keyPath.isEmpty()) {
@@ -329,16 +311,7 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
             if (v != null) {
 
                 // construct key path...
-                final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
-                final StringBuilder sb = new StringBuilder();
-                for (int i=nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
-                    String s = objects[i];
-                    sb.append(s);
-                    if (i != 0) {
-                        sb.append(".");
-                    }
-                }
-                final String keyPath = sb.toString();
+                final String keyPath = constructKeyPath();
 
                 // index it...
                 if (keyPath.isEmpty()) {
@@ -408,6 +381,21 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         errorOccurred = true;
     }
 
+
+    // --- infra ---
+
+    private String constructKeyPath() {
+        final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
+        final StringBuilder sb = new StringBuilder();
+        for (int i = nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
+            String s = objects[i];
+            sb.append(s);
+            if (i != 0) {
+                sb.append(KEYPATH_JOINER);
+            }
+        }
+        return sb.toString();
+    }
 
     // quick test
     public static void main(String[] args) {

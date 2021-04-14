@@ -250,7 +250,12 @@ class TrieTest {
         }
 
         @Override
-        public LinkedHashMap<String, String> getIndexedContents() {
+        public LinkedHashMap<String, String> getIndexedContentsByKeyPath() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Trie<?> getIndexedContentsByKeyPathTrie() {
             throw new UnsupportedOperationException();
         }
 

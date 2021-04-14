@@ -36,12 +36,12 @@ class KvRecordIndexerTest {
 
 
         Map.Entry<String, Value<?>> secondEntry = iterator.next();
-        assertEquals("_fn3._nf4", secondEntry.getKey());
+        assertEquals("_fn3~>_nf4", secondEntry.getKey());
         assertTrue(secondEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> thirdEntry = iterator.next();
-        assertEquals("_fn3._nf4._float23", thirdEntry.getKey());
+        assertEquals("_fn3~>_nf4~>_float23", thirdEntry.getKey());
         assertTrue(thirdEntry.getValue() instanceof FloatValue);
 
 
@@ -68,12 +68,12 @@ class KvRecordIndexerTest {
         iterator = entries.iterator();
 
         firstEntry = iterator.next();
-        assertEquals("_fn3._nf4", firstEntry.getKey());
+        assertEquals("_fn3~>_nf4", firstEntry.getKey());
         assertTrue(firstEntry.getValue() instanceof NestedValue);
 
 
         secondEntry = iterator.next();
-        assertEquals("_fn3._nf4._float23", secondEntry.getKey());
+        assertEquals("_fn3~>_nf4~>_float23", secondEntry.getKey());
         assertTrue(secondEntry.getValue() instanceof FloatValue);
 
 
@@ -88,12 +88,12 @@ class KvRecordIndexerTest {
 
 
         fifthEntry = iterator.next();
-        assertEquals("_fn32._nf42", fifthEntry.getKey());
+        assertEquals("_fn32~>_nf42", fifthEntry.getKey());
         assertTrue(fifthEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> sixthEntry = iterator.next();
-        assertEquals("_fn32._nf42._someOtherStr", sixthEntry.getKey());
+        assertEquals("_fn32~>_nf42~>_someOtherStr", sixthEntry.getKey());
         assertTrue(sixthEntry.getValue() instanceof StringValue);
 
 
@@ -121,12 +121,12 @@ class KvRecordIndexerTest {
         iterator = entries.iterator();
 
         firstEntry = iterator.next();
-        assertEquals("_fn1._nf2", firstEntry.getKey());
+        assertEquals("_fn1~>_nf2", firstEntry.getKey());
         assertTrue(firstEntry.getValue() instanceof NestedValue);
 
 
         secondEntry = iterator.next();
-        assertEquals("_fn1._nf2._int1", secondEntry.getKey());
+        assertEquals("_fn1~>_nf2~>_int1", secondEntry.getKey());
         assertTrue(secondEntry.getValue() instanceof IntValue);
 
 
@@ -136,12 +136,12 @@ class KvRecordIndexerTest {
 
 
         fourthEntry = iterator.next();
-        assertEquals("_fn3._nf4", fourthEntry.getKey());
+        assertEquals("_fn3~>_nf4", fourthEntry.getKey());
         assertTrue(fourthEntry.getValue() instanceof NestedValue);
 
 
         fifthEntry = iterator.next();
-        assertEquals("_fn3._nf4._float23", fifthEntry.getKey());
+        assertEquals("_fn3~>_nf4~>_float23", fifthEntry.getKey());
         assertTrue(fifthEntry.getValue() instanceof FloatValue);
 
 
@@ -182,17 +182,17 @@ class KvRecordIndexerTest {
 
 
         thirdEntry = iterator.next();
-        assertEquals("_n2._int2", thirdEntry.getKey());
+        assertEquals("_n2~>_int2", thirdEntry.getKey());
         assertTrue(thirdEntry.getValue() instanceof IntValue);
 
 
         fourthEntry = iterator.next();
-        assertEquals("_n3._n4", fourthEntry.getKey());
+        assertEquals("_n3~>_n4", fourthEntry.getKey());
         assertTrue(fourthEntry.getValue() instanceof NestedValue);
 
 
         fifthEntry = iterator.next();
-        assertEquals("_n3._n4._strTemp", fifthEntry.getKey());
+        assertEquals("_n3~>_n4~>_strTemp", fifthEntry.getKey());
         assertTrue(fifthEntry.getValue() instanceof StringValue);
 
 

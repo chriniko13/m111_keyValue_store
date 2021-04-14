@@ -1,6 +1,5 @@
 package chriniko.kv.trie;
 
-import lombok.Value;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -30,5 +29,7 @@ public interface TrieEntry<T> {
 
     void indexContents() throws Exception;
 
-    LinkedHashMap<String, T> getIndexedContents();
+    LinkedHashMap<String, T> getIndexedContentsByKeyPath();
+
+    Trie<?> getIndexedContentsByKeyPathTrie();
 }
