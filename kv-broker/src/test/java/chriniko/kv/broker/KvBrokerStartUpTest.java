@@ -2,7 +2,7 @@ package chriniko.kv.broker;
 
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.protocol.NotOkayResponseException;
-import chriniko.kv.server.KvServer;
+import chriniko.kv.server.infra.KvServer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -4,7 +4,7 @@ import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.protocol.NotOkayResponseException;
-import chriniko.kv.server.KvServer;
+import chriniko.kv.server.infra.KvServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

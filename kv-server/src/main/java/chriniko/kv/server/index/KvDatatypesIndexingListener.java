@@ -1,4 +1,4 @@
-package chriniko.kv.datatypes.grammar;
+package chriniko.kv.server.index;
 
 import chriniko.kv.datatypes.*;
 import chriniko.kv.datatypes.error.ParsingException;
@@ -11,7 +11,16 @@ import org.javatuples.Pair;
 
 import java.util.*;
 
-public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
+
+/**
+ * The purpose of this listener is to index the key-values of the provided input string (walk it).
+ *
+ * The result of this parsing-process is used from query operation of the kv-server, in order to
+ * have constant time during querying based on key.
+ *
+ * This listener is used from {@link KvRecordIndexer}
+ */
+public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
     @Getter
     private boolean errorOccurred = false;
@@ -45,6 +54,10 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
 
     private final ArrayDeque<String> nestedEntriesKeysStack = new ArrayDeque<>();
+
+
+    @Getter
+    private final LinkedHashMap<String, Value<?>> indexedValues = new LinkedHashMap<>();
 
     // ---
 
@@ -81,13 +94,13 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         if (processedKeysList.size() != processedKeysSet.size()) {
             Collections.sort(processedKeysList);
 
-            final ArrayList<String> temp = new ArrayList<>(processedKeysSet);
+            ArrayList<String> temp = new ArrayList<>(processedKeysSet);
             Collections.sort(temp);
 
             System.out.println("list: " + processedKeysList);
             System.out.println("set: " + temp);
 
-            final ParsingException parsingException
+            ParsingException parsingException
                     = new ParsingException("(processedKeysList.size() != processedKeysSet.size()) duplicated keys found - check your input!");
             throw new UncheckedParsingException(parsingException);
         }
@@ -133,8 +146,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         if (ctx != null) {
             if (ctx.key() != null) {
 
-                // extract key and save it...
-                final String key = ctx.key().getText().replace("\"", "");
+                String key = ctx.key().getText().replace("\"", "");
                 nestedEntriesKeysStack.push(key);
                 currentKey = null;
             }
@@ -146,22 +158,53 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         System.out.println("exitNestedEntry");
         if (ctx != null) {
 
-            // when exiting from nested entry...extract created values and create nesting hierarchy
+            // when exiting from nested entry...extract create values and create nesting hierarchy
             if (!nestedEntriesKeysStack.isEmpty()) {
 
-                final String key = nestedEntriesKeysStack.pop();
+                // construct key path...
+                final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
+                final StringBuilder sb = new StringBuilder();
+                for (int i=nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
+                    String s = objects[i];
+                    sb.append(s);
+                    if (i != 0) {
+                        sb.append(".");
+                    }
+                }
+                final String keyPath = sb.toString();
+                if (keyPath.isEmpty()) {
+                    throw new ParsingInfraException("parser not in correct state");
+                }
 
+
+                // time to construct the value and save it
+                final String key = nestedEntriesKeysStack.pop();
                 if (currentListValue != null) { // if the nested entry occurred inside a list value then...
 
-                    final Value<?> v = processedValuesForCurrentListStack.pop();
-                    final NestedValue nestedValue = new NestedValue(key, v);
+                    Value<?> v = processedValuesForCurrentListStack.pop();
+                    System.out.println("NIAOU1"+ v);
+
+                    NestedValue nestedValue = new NestedValue(key, v);
                     processedValuesForCurrentListStack.push(nestedValue);
+
+
+                    // index it
+                    indexedValues.put(keyPath, nestedValue);
+                    indexedValues.put(keyPath + "." + v.getKey(), v);
 
                 } else {
 
-                    final Value<?> v = processedValuesStack.pop();
-                    final NestedValue nestedValue = new NestedValue(key, v);
+                    Value<?> v = processedValuesStack.pop();
+                    System.out.println("NIAOU2"+ v);
+
+                    NestedValue nestedValue = new NestedValue(key, v);
                     processedValuesStack.push(nestedValue);
+
+
+                    // index it
+                    indexedValues.put(keyPath, nestedValue);
+                    indexedValues.put(keyPath + "." + v.getKey(), v);
+
                 }
 
             } else {
@@ -181,6 +224,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         if (currentListValue != null) {
             listValuesStack.push(Pair.with(currentListValue, processedValuesForCurrentListStack));
         }
+
 
         // re-init for start processing the list
         final String key = ctx.key().getText();
@@ -209,10 +253,29 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
             currentListValue.add(tempStack.pop());
         }
 
+        // construct key path...
+        final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
+        final StringBuilder sb = new StringBuilder();
+        for (int i=nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
+            String s = objects[i];
+            sb.append(s);
+            if (i != 0) {
+                sb.append(".");
+            }
+        }
+        final String keyPath = sb.toString();
+
+        // index it
+        if (keyPath.isEmpty()) {
+            indexedValues.put(currentListValue.getKey(), currentListValue);
+        } else {
+            indexedValues.put(keyPath, currentListValue);
+        }
 
 
         // restore state of list value if exists and save in the correct structure the processed value.
         if (!listValuesStack.isEmpty()) {
+            // if this list occurred inside another list just add it there...
 
             final ListValue temp = currentListValue;
 
@@ -223,6 +286,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
             processedValuesForCurrentListStack.push(temp);
 
         } else {
+            // if this list did not occur inside another list save it on the processed stack...
             processedValuesStack.push(currentListValue);
             currentListValue = null;
         }
@@ -264,6 +328,25 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
             // save value
             if (v != null) {
 
+                // construct key path...
+                final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
+                final StringBuilder sb = new StringBuilder();
+                for (int i=nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
+                    String s = objects[i];
+                    sb.append(s);
+                    if (i != 0) {
+                        sb.append(".");
+                    }
+                }
+                final String keyPath = sb.toString();
+
+                // index it...
+                if (keyPath.isEmpty()) {
+                    indexedValues.put(v.getKey(), v);
+                } else {
+                    indexedValues.put(keyPath, v);
+                }
+
                 if (currentListValue != null) {
                     // if this value belong to the currently processed list then add it to it's stack
                     processedValuesForCurrentListStack.push(v);
@@ -291,7 +374,6 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
     public void exitKey(KvDatatypesParser.KeyContext ctx) {
         if (ctx != null) {
 
-            // extract key...
             currentKey = ctx.getText();
             currentKey = currentKey.replace("\"", "");
 
@@ -326,5 +408,24 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         errorOccurred = true;
     }
 
+
+    // quick test
+    public static void main(String[] args) {
+
+
+        ArrayDeque<String> stack = new ArrayDeque<>();
+
+        stack.push("a");
+        stack.push("b");
+        stack.push("c");
+
+        System.out.println(String.join(",", stack));
+
+        String[] objects = stack.toArray(new String[0]);
+        for (int i=stack.size() - 1; i >= 0; i--) {
+            System.out.println(objects[i]);
+        }
+
+    }
 
 }

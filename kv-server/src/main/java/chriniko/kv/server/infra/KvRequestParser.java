@@ -1,4 +1,4 @@
-package chriniko.kv.server;
+package chriniko.kv.server.infra;
 
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.error.ParsingException;
@@ -6,6 +6,8 @@ import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.protocol.ErrorTypeConstants;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
+import chriniko.kv.server.error.KvServerIndexErrorException;
+import chriniko.kv.server.error.KvServerInfraException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -76,6 +78,12 @@ public class KvRequestParser {
 
                 System.err.println("parsing error occurred, msg: " + e.getMessage());
                 String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.PARSING_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
+            } catch (KvServerIndexErrorException e) {
+
+                System.err.println("index error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.INDEX_ERROR, e.getMessage());
                 writeResponseMessage(byteBuffer, errorResp);
 
             }

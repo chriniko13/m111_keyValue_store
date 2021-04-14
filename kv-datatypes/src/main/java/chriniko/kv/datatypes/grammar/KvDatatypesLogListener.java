@@ -5,19 +5,9 @@ import chriniko.kv.datatypes.KvDatatypesParser;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-/*
-So long time to feel excited from a tool, but I am glad that ANTLR exists (29 years of hard-solid work), which make our nights' longer (and ofc, our lives easier).
-
-
-
-
-
-#antlr #antlr4
- */
-
 /**
- * Experimental log listener to test grammar and understand better ANTLR4.
- * It is used from {@link GrammarPoC}
+ * Experimental log listener to test grammar and understand better ANTLR4 mechanics.
+ * It is used from {@link GrammarPoC} for fast testing-prototyping.
  */
 public class KvDatatypesLogListener extends KvDatatypesBaseListener {
 

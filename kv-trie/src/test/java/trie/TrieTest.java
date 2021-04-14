@@ -8,10 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -245,6 +242,16 @@ class TrieTest {
         @Override
         public void triggerUpdateTime() {
             updateTime = Instant.now();
+        }
+
+        @Override
+        public void indexContents() throws Exception {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LinkedHashMap<String, String> getIndexedContents() {
+            throw new UnsupportedOperationException();
         }
 
         public String getValue() {

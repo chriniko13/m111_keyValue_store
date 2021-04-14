@@ -14,8 +14,6 @@ public class DatatypesAntlrParserComplexTest {
     @Test
     void worksAsExpected() throws ParsingException {
 
-        // START: 2 ENTRIES ALL COMBINATIONS
-
         // =====================================================
         // when
         String input = "{ \"_myList\" : [ { \"_strTemp\" : \"allGood allFine all work\" } ; { \"_fn3\" : { \"_nf4\" : { \"_float23\" : 2.34 } } } ] }";
@@ -90,6 +88,22 @@ public class DatatypesAntlrParserComplexTest {
                 input,
                 r.asString()
         );
+
+
+        // =====================================================
+        // when
+        input = "{ \"_fn3\" : { \"_nf4\" : { \"_float23\" : [ { \"_float1\" : 1.23 } ; { \"_str21\" : \"twenty_one\" } ] } } }";
+        r = DatatypesAntlrParser.process(input);
+
+        // then
+        assertNotNull(r);
+
+        assertEquals(
+                input,
+                r.asString()
+        );
+
+
 
     }
 

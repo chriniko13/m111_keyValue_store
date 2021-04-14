@@ -1,4 +1,4 @@
-package chriniko.kv.server;
+package chriniko.kv.server.infra;
 
 import chriniko.kv.protocol.ProtocolConstants;
 
