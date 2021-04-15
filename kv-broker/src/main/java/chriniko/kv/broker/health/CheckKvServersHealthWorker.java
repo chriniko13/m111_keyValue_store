@@ -1,5 +1,7 @@
-package chriniko.kv.broker;
+package chriniko.kv.broker.health;
 
+import chriniko.kv.broker.api.KvServerContactPoint;
+import chriniko.kv.broker.infra.KvServerClient;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
 import lombok.Getter;

@@ -24,6 +24,15 @@ The `kv-infra` consists from the following modules:
   So, a third party program (client) if wants to use the `kv-server` should have `kv-broker` as a dependency, run one or more `kv-server`
   and start the `kv-broker` (inside client program because it has been used as a dependency) pointing to the running `kv-server(s)`.
   
+
+  Moreover, it provides 4 consistency levels for executing the supported operations, these are the following:
+    * ONE
+    * ALL
+    * QUORUM ((sum_of_replication_factors / 2) + 1)
+    * REPLICATION FACTOR
+  More can be checked at: [ConsistencyLevel.java](kv-broker/src/main/java/chriniko/kv/broker/ConsistencyLevel.java)
+
+
   ![](broker_architecture.svg)
 
 

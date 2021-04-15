@@ -1,4 +1,4 @@
-package chriniko.kv.broker;
+package chriniko.kv.broker.infra;
 
 import java.util.HashSet;
 import java.util.Iterator;

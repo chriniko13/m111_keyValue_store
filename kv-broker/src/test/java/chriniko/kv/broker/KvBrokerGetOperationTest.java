@@ -1,6 +1,9 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.api.ConsistencyLevel;
+import chriniko.kv.broker.api.KvServerContactPoint;
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
+import chriniko.kv.broker.operation.KvBroker;
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.protocol.NotOkayResponseException;

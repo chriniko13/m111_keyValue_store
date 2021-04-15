@@ -1,4 +1,4 @@
-package chriniko.kv.broker;
+package chriniko.kv.broker.api;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

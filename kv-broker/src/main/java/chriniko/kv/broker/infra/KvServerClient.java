@@ -1,4 +1,4 @@
-package chriniko.kv.broker;
+package chriniko.kv.broker.infra;
 
 import chriniko.kv.protocol.ProtocolConstants;
 import lombok.EqualsAndHashCode;

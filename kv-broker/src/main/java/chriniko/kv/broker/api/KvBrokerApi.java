@@ -1,5 +1,6 @@
-package chriniko.kv.broker;
+package chriniko.kv.broker.api;
 
+import chriniko.kv.broker.infra.KvServerClient;
 import chriniko.kv.broker.error.availability.*;
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.datatypes.Value;
@@ -47,5 +48,5 @@ public interface KvBrokerApi {
             ReplicationFactorNotApplicableException, QuorumNotApplicableException;
 
 
-    Optional<Value<?>> query(String key, ConsistencyLevel consistencyLevel);
+    Optional<Value<?>> query(QueryKey key, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException;
 }

@@ -1,6 +1,9 @@
 package chriniko.kv.broker;
 
+import chriniko.kv.broker.api.KvServerContactPoint;
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
+import chriniko.kv.broker.infra.KvServerClient;
+import chriniko.kv.broker.operation.KvBroker;
 import chriniko.kv.protocol.NotOkayResponseException;
 import chriniko.kv.server.infra.KvServer;
 import org.awaitility.Awaitility;

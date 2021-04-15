@@ -1,4 +1,4 @@
-package chriniko.kv.broker;
+package chriniko.kv.broker.health;
 
 public enum KvServerHealthState {
 
