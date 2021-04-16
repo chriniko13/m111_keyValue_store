@@ -14,6 +14,7 @@ The `kv-infra` consists from the following modules:
 
   ![](data_injector_depends.png)
 
+<hr/>
     
 * [kv-broker](kv-broker/README.md) which is responsible for communicating with the `kv-server` and performing the supported actions
   (get, put, delete, query). A client application, will have as dependency the `kv-broker` to interact with our `kv-server`.
@@ -40,8 +41,9 @@ The `kv-infra` consists from the following modules:
 
   TODO mention a good test to see the usage of it....
 
+<hr/>
 
-* [kv-datatypes](kv-datatypes/README.md) here are defined the values which are supported from `kv-server`.
+* [kv-datatypes](kv-datatypes/README.md) the definition of supported values which `kv-server` can understand during deserialization of received string.
     * Flat values ([FlatValue.java](kv-datatypes/src/main/java/chriniko/kv/datatypes/FlatValue.java)) such as:
       * [StringValue](kv-datatypes/src/main/java/chriniko/kv/datatypes/StringValue.java)
       * [FloatValue](kv-datatypes/src/main/java/chriniko/kv/datatypes/StringValue.java)
@@ -88,7 +90,7 @@ The `kv-infra` consists from the following modules:
   ![](kv_datatypes_depends.png)
 
 
-
+<hr/>
   
 * [kv-server](kv-server/README.md) which is responsible for receiving the request from `kv-broker`, parsing it, executing
   the required logic, access if necessary the storage engine and reply-back to `kv-broker` with the correct response.
@@ -96,7 +98,43 @@ The `kv-infra` consists from the following modules:
 
   ![](kv_server_depends.png)
 
+  * Indexing process:
+        For supporting query operation, I have implemented `KvRecord#indexContents()` method --> [KvRecord#indexContents.java](kv-server/src/main/java/chriniko/kv/server/infra/KvRecord.java)
+        by using ANTLR4 defined grammar in `kv-datatypes`.
+        So, I have created a listener [KvDatatypesIndexingListener.java](kv-server/src/main/java/chriniko/kv/server/index/KvDatatypesIndexingListener.java) which process the input string
+        and returns a `LinkedHashMap<String, Value<?>>` which for each entry the key contains the key path and for the value the indexed record.
+        The indexing process takes place during insert of the record (pre-calculation) which also can happen in an asynchronous manner for leveraging the hardware.
+        <br/>
+        <br/>
+    * Example:
+      
+      Input string: `"_chriniko1711" : { "_studentDetails" : [ { "_username" : "chriniko" } ; { "_email" : "chriniko" } ; { "_address" : [ { "_street" : "Panepistimioupoli 123, Kesariani" } ; { "_postCode" : "16121" } ; { "_city" : "Athens" } ; { "_country" : "Greece" } ] } ; { "_name" : [ { "_firstname" : "Nikolaos" } ; { "_surname" : "Christidis" } ] } ] }`
+      
+      Output after indexing:
+      ![](indexing.png)
+      <br/>
+      <br/>
+      So we can understand that the query operation has O(n) time complexity (where n is the length of the key) in order to find the record (eg: from above string `_chriniko1711`), and then is O(1)
+      in order to access-find the value of the record based on provided key path(query key) which is indexed (eg: from above string `_studentDetails~>_username`)
+      <br/>
+      `value <- query('_chriniko1711', '_studentDetails~>_username');`
+      <br/>
+      <br/>
+      In order to satisfy the exercise, the indexing of record does not only get supported from the above explained map, but also with an inner trie per record level.
+      (Check to see how inner trie per record level is constructed: [KvRecord#indexContents.java](kv-server/src/main/java/chriniko/kv/server/infra/KvRecord.java))
+      <br/>
+      <br/>
+      [KvStorageEngine#query.java](kv-server/src/main/java/chriniko/kv/server/infra/KvStorageEngine.java) takes as parameter if during query search to use trie or map.
+      <br/>
+      <br/>
+      ![](trieOptionToQuery.png)
+      <br/>
+      <br/>
+      Of course, by using the inner trie in order to query-search the provided key path of the target record the time complexity is O(n) where n is the length of the keypath.
 
+
+
+<hr/>
     
 * [kv-trie](kv-trie/README.md) contains infra code to support the Trie data structure. The [Trie.java](kv-trie/src/main/java/chriniko/kv/trie/Trie.java)
   is a no thread safe implementation.
@@ -104,11 +142,14 @@ The `kv-infra` consists from the following modules:
   ![](kv_trie_depends.png)
 
 
+<hr/>
 
 * [kv-protocol](kv-protocol/README.md) contains common code which is used for the communication between `kv-server` and `kv-broker`.
 
   ![](kv_protocol_depends.png)
 
+
+<hr/>
 
 ### Run all tests
 * For running all tests execute: `mvn clean test`.

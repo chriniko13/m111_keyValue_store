@@ -17,4 +17,8 @@ public class ErrorReceivedFromKvServerException extends KvInfraException {
     public boolean isParsingError() {
         return serverResponse.contains(ErrorTypeConstants.PARSING_ERROR.name());
     }
+
+    public boolean isIndexError() {
+        return serverResponse.contains(ErrorTypeConstants.INDEX_ERROR.name());
+    }
 }

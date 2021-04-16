@@ -3,8 +3,11 @@ package chriniko.kv.server.infra;
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.error.ParsingException;
 import chriniko.kv.server.error.KvServerIndexErrorException;
+import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.trie.Trie;
 import chriniko.kv.trie.TrieNode;
+
+import java.util.LinkedHashMap;
 
 public class KvStorageEngine {
 
@@ -39,5 +42,46 @@ public class KvStorageEngine {
         return memoDb.delete(key)
                 .map(KvRecord::value)
                 .orElse(null);
+    }
+
+    public Value<?> query(String rootKey, String queryKey, boolean useTrie) {
+
+        if (queryKey.isEmpty() || !queryKey.contains("~>")) {
+            return fetch(rootKey);
+        } else {
+
+            // first find record with the top key (O(n) n is the length of the top key)
+            final KvRecord record = memoDb.find(rootKey).orElse(null);
+            if (record == null) {
+                return null;
+            }
+
+
+            // now search for indexed data based on the selected index data structure
+            if (useTrie) {
+
+                // indexed search with trie is O(n) where n is the length of the keypath/keys
+                Trie<KvIndexedData> indexedDataTrie = record.getIndexedContentsByKeyPathTrie();
+                KvIndexedData indexedData = indexedDataTrie.find(queryKey).orElse(null);
+                if (indexedData == null) {
+                    System.out.println("indexed data (trie) retrieved: null");
+                    return null;
+                } else {
+                    Value<?> indexedRecord = indexedData.value();
+                    System.out.println("indexed data (trie) retrieved: " + indexedRecord);
+                    return indexedRecord;
+                }
+
+            } else {
+
+                // indexed search with map is O(1)
+                LinkedHashMap<String, Value<?>> indexedData = record.getIndexedContentsByKeyPath();
+                Value<?> value = indexedData.get(queryKey);
+                System.out.println("indexed data (map) retrieved: " + value);
+                return value;
+
+            }
+
+        }
     }
 }

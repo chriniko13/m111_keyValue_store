@@ -39,8 +39,10 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
     private ArrayDeque<Value<?>> processedValuesForCurrentListStack;
 
     private final ArrayDeque<
-            Pair<ListValue,
-                    ArrayDeque<Value<?>>>
+            Pair<
+                    ListValue /*list value*/,
+                    ArrayDeque<Value<?>> /*processed values of list value */
+                    >
             > listValuesStack = new ArrayDeque<>();
 
 
@@ -93,7 +95,6 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         }
 
 
-
         // just pop the only one value in stack which is the result
         if (processedValuesStack.size() != 1) {
             throw new ParsingInfraException("processedValuesStack.size() != 1");
@@ -128,7 +129,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     @Override
     public void enterNestedEntry(KvDatatypesParser.NestedEntryContext ctx) {
-        System.out.println("enterNestedEntry");
+        //System.out.println("enterNestedEntry");
 
         if (ctx != null) {
             if (ctx.key() != null) {
@@ -143,7 +144,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     @Override
     public void exitNestedEntry(KvDatatypesParser.NestedEntryContext ctx) {
-        System.out.println("exitNestedEntry");
+        //System.out.println("exitNestedEntry");
         if (ctx != null) {
 
             // when exiting from nested entry...extract created values and create nesting hierarchy
@@ -175,7 +176,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     @Override
     public void enterListEntry(KvDatatypesParser.ListEntryContext ctx) {
-        System.out.println("enterListBodyStartNode");
+        //System.out.println("enterListBodyStartNode");
 
         // save state if before exiting from a list value we found another one list value
         if (currentListValue != null) {
@@ -192,11 +193,10 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     @Override
     public void exitListEntry(KvDatatypesParser.ListEntryContext ctx) {
-        System.out.println("exitListBodyStartNode");
+        //System.out.println("exitListBodyStartNode");
         if (currentListValue == null) {
             throw new ParsingInfraException("parser in incorrect state!");
         }
-
 
 
         // time to pop all processed values and collect them to a list value
@@ -208,7 +208,6 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
         while (!tempStack.isEmpty()) {
             currentListValue.add(tempStack.pop());
         }
-
 
 
         // restore state of list value if exists and save in the correct structure the processed value.
@@ -237,7 +236,7 @@ public class KvDatatypesAssemblyListener extends KvDatatypesBaseListener {
 
     @Override
     public void exitValue(KvDatatypesParser.ValueContext ctx) {
-        System.out.println("exitValue");
+        //System.out.println("exitValue");
 
         if (ctx != null) {
 

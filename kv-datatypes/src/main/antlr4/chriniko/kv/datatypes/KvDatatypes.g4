@@ -3,10 +3,6 @@ grammar KvDatatypes;
 
 // ############ PARSER RULES ############
 
-@parser::members {
-  private boolean entered = false;
-}
-
 
 parse:
     entry
@@ -18,8 +14,6 @@ entry:  nestedEntry
          | flatEntry
          | listEntry
 ;
-
-// { "_1stSemester" : { "_notPassed" : [ { "_les1_01" : "algos" } ; { "_les1_02" : "os" } ] } }
 
 
 key: ID
@@ -38,20 +32,6 @@ nestedEntry: '{' key ':' entry '}'
 ;
 
 
-
-//listBody
-//: {entered=true;}               listBodyStartNode
-//    |               listBodyMidNode
-//    | {entered=false;}           listBodyEndNode
-//;
-
-// ; { "_lessonsNeeded" : { "_3rdSemester" : [ { "_les3_01" : "compilers" } ; { "_2ndSemester" : { "_1stSemester" : {
-//listBodyStartNode: list
-//;
-//listBodyMidNode: entry ';' listBody
-//;
-//listBodyEndNode: entry ']'
-//;
 
 list: '[' entry ']'
     | '[' entry ( ';' entry)+ ']'

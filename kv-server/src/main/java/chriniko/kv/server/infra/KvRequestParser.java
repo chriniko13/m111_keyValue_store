@@ -7,7 +7,6 @@ import chriniko.kv.protocol.ErrorTypeConstants;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
 import chriniko.kv.server.error.KvServerIndexErrorException;
-import chriniko.kv.server.error.KvServerInfraException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -143,11 +142,32 @@ public class KvRequestParser {
         } else if (messageReceivedFromBroker.startsWith(Operations.QUERY.getMsgOp())) {
 
 
-            //todo
+            final String[] s = messageReceivedFromBroker.split(" ");
+            final String operation = s[0];
+            final String key = s[1];
 
-            String okayResp = ProtocolConstants.OKAY_RESP;
-            System.out.println("WILL REPLY WITH: " + okayResp);
-            writeResponseMessage(byteBuffer, okayResp);
+            String[] splittedKey = key.split("\\|");
+            String rootKey = splittedKey[0];
+            String queryKey = splittedKey[1];
+
+            System.out.println("query operation: " + operation + " --- query received: " + key);
+
+            final Value<?> result = kvStorageEngine.query(rootKey, queryKey, true);
+            if (result != null) {
+
+                final String serializedResult = result.asString();
+
+                final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
+                System.out.println("WILL REPLY WITH: " + okayResp);
+                writeResponseMessage(byteBuffer, okayResp);
+
+            } else {
+
+                final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                System.out.println("WILL REPLY WITH: " + notFoundResp);
+                writeResponseMessage(byteBuffer, notFoundResp);
+
+            }
 
         } else {
 

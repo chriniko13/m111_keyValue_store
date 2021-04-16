@@ -7,17 +7,17 @@ import chriniko.kv.datatypes.error.UncheckedParsingException;
 import lombok.Getter;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.javatuples.Pair;
+import org.javatuples.Triplet;
 
 import java.util.*;
 
 
 /**
  * The purpose of this listener is to index the key-values of the provided input string (walk it).
- *
+ * <p>
  * The result of this parsing-process is used from query operation of the kv-server, in order to
  * have constant time during querying based on key.
- *
+ * <p>
  * This listener is used from {@link KvRecordIndexer}
  */
 public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
@@ -48,10 +48,14 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
     private ListValue currentListValue;
     private ArrayDeque<Value<?>> processedValuesForCurrentListStack;
+    private LinkedList<String> keypathForCurrentList;
 
     private final ArrayDeque<
-            Pair<ListValue,
-                    ArrayDeque<Value<?>>>
+            Triplet<
+                    ListValue /*list value*/,
+                    ArrayDeque<Value<?>> /*processed values of list value */,
+                    LinkedList<String> /* keypath until we found list value*/
+                    >
             > listValuesStack = new ArrayDeque<>();
 
 
@@ -108,7 +112,6 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         }
 
 
-
         // just pop the only one value in stack which is the result
         if (processedValuesStack.size() != 1) {
             throw new ParsingInfraException("processedValuesStack.size() != 1");
@@ -148,9 +151,14 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         if (ctx != null) {
             if (ctx.key() != null) {
 
-                String key = ctx.key().getText().replace("\"", "");
+                final String key = ctx.key().getText().replace("\"", "");
                 nestedEntriesKeysStack.push(key);
                 currentKey = null;
+
+                // if we are inside a list value update key path accordingly
+                if (currentListValue != null) {
+                    keypathForCurrentList.add(key);
+                }
             }
         }
     }
@@ -160,47 +168,44 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         System.out.println("exitNestedEntry");
         if (ctx != null) {
 
-            // when exiting from nested entry...extract create values and create nesting hierarchy
-            if (!nestedEntriesKeysStack.isEmpty()) {
-
-                // construct key path...
-                final String keyPath = constructKeyPath();
-                if (keyPath.isEmpty()) {
-                    throw new ParsingInfraException("parser not in correct state");
-                }
-
-
-                // time to construct the value and save it
-                final String key = nestedEntriesKeysStack.pop();
-                final Value<?> v;
-                if (currentListValue != null) { // if the nested entry occurred inside a list value then...
-
-                    v = processedValuesForCurrentListStack.pop();
-                    NestedValue nestedValue = new NestedValue(key, v);
-                    processedValuesForCurrentListStack.push(nestedValue);
-
-
-                    // index it
-                    indexedValues.put(keyPath, nestedValue);
-
-                } else {
-
-                    v = processedValuesStack.pop();
-                    NestedValue nestedValue = new NestedValue(key, v);
-                    processedValuesStack.push(nestedValue);
-
-
-                    // index it
-                    indexedValues.put(keyPath, nestedValue);
-
-                }
-
-                // index also value
-                indexedValues.put(keyPath + KEYPATH_JOINER + v.getKey(), v);
-
-            } else {
+            if (nestedEntriesKeysStack.isEmpty()) {
                 throw new ParsingInfraException("parser in incorrect state!");
             }
+
+            // when exiting from nested entry...extract create values and create nesting hierarchy
+
+            // time to construct the value and save it
+            final String key = nestedEntriesKeysStack.pop();
+            final Value<?> v;
+
+            if (currentListValue != null) { // if the nested entry occurred inside a list value then...
+
+                v = processedValuesForCurrentListStack.pop();
+                final NestedValue nestedValue = new NestedValue(key, v);
+                processedValuesForCurrentListStack.push(nestedValue);
+
+
+                // index it
+                final String keyPath = String.join(KEYPATH_JOINER, keypathForCurrentList);
+                keypathForCurrentList.removeLast();
+                indexedValues.put(keyPath, nestedValue);
+                System.out.println("(1) will index " + keyPath + " for v: " + nestedValue);
+
+
+            } else {
+
+                v = processedValuesStack.pop();
+                final NestedValue nestedValue = new NestedValue(key, v);
+                processedValuesStack.push(nestedValue);
+
+
+                // index it
+                final String keyPath = String.join(KEYPATH_JOINER, constructKeyPath());
+                indexedValues.put(keyPath, nestedValue);
+                System.out.println("(2) will index " + keyPath + " for v: " + nestedValue);
+
+            }
+
         }
     }
 
@@ -213,7 +218,7 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
         // save state if before exiting from a list value we found another one list value
         if (currentListValue != null) {
-            listValuesStack.push(Pair.with(currentListValue, processedValuesForCurrentListStack));
+            listValuesStack.push(Triplet.with(currentListValue, processedValuesForCurrentListStack, keypathForCurrentList));
         }
 
 
@@ -221,8 +226,22 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         final String key = ctx.key().getText();
         final String cleanedKey = key.replace("\"", "");
 
-        currentListValue = new ListValue(cleanedKey);
-        processedValuesForCurrentListStack = new ArrayDeque<>();
+
+        // make sure we do not lose the key path...
+        if (currentListValue != null) {
+
+            currentListValue = new ListValue(cleanedKey);
+            processedValuesForCurrentListStack = new ArrayDeque<>();
+
+            keypathForCurrentList.add(cleanedKey);
+
+        } else {
+            currentListValue = new ListValue(cleanedKey);
+            processedValuesForCurrentListStack = new ArrayDeque<>();
+
+            keypathForCurrentList = constructKeyPath();
+            keypathForCurrentList.add(cleanedKey);
+        }
     }
 
     @Override
@@ -231,7 +250,6 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         if (currentListValue == null) {
             throw new ParsingInfraException("parser in incorrect state!");
         }
-
 
 
         // time to pop all processed values and collect them to a list value
@@ -244,13 +262,14 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
             currentListValue.add(tempStack.pop());
         }
 
-        // construct key path...
-        final String keyPath = constructKeyPath();
 
         // index it
+        final String keyPath = String.join(KEYPATH_JOINER, keypathForCurrentList);
+        keypathForCurrentList.removeLast();
         if (keyPath.isEmpty()) {
-            indexedValues.put(currentListValue.getKey(), currentListValue);
+            throw new ParsingInfraException("parser not in valid state");
         } else {
+            System.out.println("KEYPATH: " + keyPath + " CURRENT LIST VALUE: " + currentListValue);
             indexedValues.put(keyPath, currentListValue);
         }
 
@@ -261,9 +280,12 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
             final ListValue temp = currentListValue;
 
-            final Pair<ListValue, ArrayDeque<Value<?>>> popped = listValuesStack.pop();
+            // restore state also...
+            final Triplet<ListValue, ArrayDeque<Value<?>>, LinkedList<String>> popped = listValuesStack.pop();
             currentListValue = popped.getValue0();
             processedValuesForCurrentListStack = popped.getValue1();
+            keypathForCurrentList = popped.getValue2();
+
 
             processedValuesForCurrentListStack.push(temp);
 
@@ -310,22 +332,34 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
             // save value
             if (v != null) {
 
-                // construct key path...
-                final String keyPath = constructKeyPath();
-
-                // index it...
-                if (keyPath.isEmpty()) {
-                    indexedValues.put(v.getKey(), v);
-                } else {
-                    indexedValues.put(keyPath, v);
-                }
-
                 if (currentListValue != null) {
                     // if this value belong to the currently processed list then add it to it's stack
                     processedValuesForCurrentListStack.push(v);
                 } else {
                     // otherwise just mark it as processed
                     processedValuesStack.push(v);
+                }
+
+
+                // index it...
+                if (currentListValue != null) {
+
+                    final String keyPath = String.join(KEYPATH_JOINER, keypathForCurrentList);
+                    indexedValues.put(keyPath + KEYPATH_JOINER + v.getKey(), v);
+
+                } else {
+
+                    final String keyPath = String.join(KEYPATH_JOINER, constructKeyPath());
+                    System.out.println("exitValue KEYPATH: " + keyPath);
+
+                    if (keyPath.isEmpty()) {
+                        System.out.println("(1) exitValue keypath: empty  --- currentListValue!=null: " + (currentListValue != null));
+                        indexedValues.put(v.getKey(), v);
+
+                    } else {
+                        System.out.println("(2) exitValue keypath: " + keyPath + " --- currentListValue!=null: " + (currentListValue != null));
+                        indexedValues.put(keyPath, v);
+                    }
                 }
 
 
@@ -346,6 +380,7 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
     @Override
     public void exitKey(KvDatatypesParser.KeyContext ctx) {
         if (ctx != null) {
+            System.out.println("EXIT KEY: " + ctx.getText());
 
             currentKey = ctx.getText();
             currentKey = currentKey.replace("\"", "");
@@ -353,7 +388,6 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
             // tracked processed keys to identify if any duplicates exist
             processedKeysList.add(currentKey);
             processedKeysSet.add(currentKey);
-
         }
     }
 
@@ -384,17 +418,17 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
 
     // --- infra ---
 
-    private String constructKeyPath() {
+    private LinkedList<String> constructKeyPath() {
+        final LinkedList<String> result = new LinkedList<>();
+
         final String[] objects = nestedEntriesKeysStack.toArray(new String[0]);
-        final StringBuilder sb = new StringBuilder();
+
         for (int i = nestedEntriesKeysStack.size() - 1; i >= 0; i--) {
             String s = objects[i];
-            sb.append(s);
-            if (i != 0) {
-                sb.append(KEYPATH_JOINER);
-            }
+            result.add(s);
         }
-        return sb.toString();
+
+        return result;
     }
 
     // quick test
@@ -410,7 +444,7 @@ public class KvDatatypesIndexingListener extends KvDatatypesBaseListener {
         System.out.println(String.join(",", stack));
 
         String[] objects = stack.toArray(new String[0]);
-        for (int i=stack.size() - 1; i >= 0; i--) {
+        for (int i = stack.size() - 1; i >= 0; i--) {
             System.out.println(objects[i]);
         }
 

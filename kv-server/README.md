@@ -6,8 +6,6 @@
 Is responsible for storing the actual data and will be handling the queries coming from the kv-broker.
 
 
-TODO....
-
 
 
 ### Build jar and run

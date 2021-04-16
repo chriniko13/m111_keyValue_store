@@ -31,28 +31,29 @@ class KvRecordIndexerTest {
 
 
         Map.Entry<String, Value<?>> firstEntry = iterator.next();
-        assertEquals("_strTemp", firstEntry.getKey());
+        assertEquals("_myList~>_strTemp", firstEntry.getKey());
         assertTrue(firstEntry.getValue() instanceof StringValue);
 
 
         Map.Entry<String, Value<?>> secondEntry = iterator.next();
-        assertEquals("_fn3~>_nf4", secondEntry.getKey());
-        assertTrue(secondEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn3~>_nf4~>_float23", secondEntry.getKey());
+        assertTrue(secondEntry.getValue() instanceof FloatValue);
 
 
         Map.Entry<String, Value<?>> thirdEntry = iterator.next();
-        assertEquals("_fn3~>_nf4~>_float23", thirdEntry.getKey());
-        assertTrue(thirdEntry.getValue() instanceof FloatValue);
+        assertEquals("_myList~>_fn3~>_nf4", thirdEntry.getKey());
+        assertTrue(thirdEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> fourthEntry = iterator.next();
-        assertEquals("_fn3", fourthEntry.getKey());
+        assertEquals("_myList~>_fn3", fourthEntry.getKey());
         assertTrue(fourthEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> fifthEntry = iterator.next();
         assertEquals("_myList", fifthEntry.getKey());
         assertTrue(fifthEntry.getValue() instanceof ListValue);
+
 
 
         // =====================================================
@@ -68,37 +69,37 @@ class KvRecordIndexerTest {
         iterator = entries.iterator();
 
         firstEntry = iterator.next();
-        assertEquals("_fn3~>_nf4", firstEntry.getKey());
-        assertTrue(firstEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn3~>_nf4~>_float23", firstEntry.getKey());
+        assertTrue(firstEntry.getValue() instanceof FloatValue);
 
 
         secondEntry = iterator.next();
-        assertEquals("_fn3~>_nf4~>_float23", secondEntry.getKey());
-        assertTrue(secondEntry.getValue() instanceof FloatValue);
+        assertEquals("_myList~>_fn3~>_nf4", secondEntry.getKey());
+        assertTrue(secondEntry.getValue() instanceof NestedValue);
 
 
         thirdEntry = iterator.next();
-        assertEquals("_fn3", thirdEntry.getKey());
+        assertEquals("_myList~>_fn3", thirdEntry.getKey());
         assertTrue(thirdEntry.getValue() instanceof NestedValue);
 
 
         fourthEntry = iterator.next();
-        assertEquals("_strTemp", fourthEntry.getKey());
+        assertEquals("_myList~>_strTemp", fourthEntry.getKey());
         assertTrue(fourthEntry.getValue() instanceof StringValue);
 
 
         fifthEntry = iterator.next();
-        assertEquals("_fn32~>_nf42", fifthEntry.getKey());
-        assertTrue(fifthEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn32~>_nf42~>_someOtherStr", fifthEntry.getKey());
+        assertTrue(fifthEntry.getValue() instanceof StringValue);
 
 
         Map.Entry<String, Value<?>> sixthEntry = iterator.next();
-        assertEquals("_fn32~>_nf42~>_someOtherStr", sixthEntry.getKey());
-        assertTrue(sixthEntry.getValue() instanceof StringValue);
+        assertEquals("_myList~>_fn32~>_nf42", sixthEntry.getKey());
+        assertTrue(sixthEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> seventhEntry = iterator.next();
-        assertEquals("_fn32", seventhEntry.getKey());
+        assertEquals("_myList~>_fn32", seventhEntry.getKey());
         assertTrue(seventhEntry.getValue() instanceof NestedValue);
 
 
@@ -121,39 +122,38 @@ class KvRecordIndexerTest {
         iterator = entries.iterator();
 
         firstEntry = iterator.next();
-        assertEquals("_fn1~>_nf2", firstEntry.getKey());
-        assertTrue(firstEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn1~>_nf2~>_int1", firstEntry.getKey());
+        assertTrue(firstEntry.getValue() instanceof IntValue);
 
 
         secondEntry = iterator.next();
-        assertEquals("_fn1~>_nf2~>_int1", secondEntry.getKey());
-        assertTrue(secondEntry.getValue() instanceof IntValue);
+        assertEquals("_myList~>_fn1~>_nf2", secondEntry.getKey());
+        assertTrue(secondEntry.getValue() instanceof NestedValue);
 
 
         thirdEntry = iterator.next();
-        assertEquals("_fn1", thirdEntry.getKey());
+        assertEquals("_myList~>_fn1", thirdEntry.getKey());
         assertTrue(thirdEntry.getValue() instanceof NestedValue);
 
 
         fourthEntry = iterator.next();
-        assertEquals("_fn3~>_nf4", fourthEntry.getKey());
-        assertTrue(fourthEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn3~>_nf4~>_float23", fourthEntry.getKey());
+        assertTrue(fourthEntry.getValue() instanceof FloatValue);
 
 
         fifthEntry = iterator.next();
-        assertEquals("_fn3~>_nf4~>_float23", fifthEntry.getKey());
-        assertTrue(fifthEntry.getValue() instanceof FloatValue);
+        assertEquals("_myList~>_fn3~>_nf4", fifthEntry.getKey());
+        assertTrue(fifthEntry.getValue() instanceof NestedValue);
 
 
         sixthEntry = iterator.next();
-        assertEquals("_fn3", sixthEntry.getKey());
+        assertEquals("_myList~>_fn3", sixthEntry.getKey());
         assertTrue(sixthEntry.getValue() instanceof NestedValue);
 
 
         seventhEntry = iterator.next();
         assertEquals("_myList", seventhEntry.getKey());
         assertTrue(seventhEntry.getValue() instanceof ListValue);
-
 
 
         // =====================================================
@@ -172,32 +172,32 @@ class KvRecordIndexerTest {
         iterator = entries.iterator();
 
         firstEntry = iterator.next();
-        assertEquals("_str1", firstEntry.getKey());
+        assertEquals("_n1~>_str1", firstEntry.getKey());
         assertTrue(firstEntry.getValue() instanceof StringValue);
 
 
         secondEntry = iterator.next();
-        assertEquals("_n2", secondEntry.getKey());
-        assertTrue(secondEntry.getValue() instanceof NestedValue);
+        assertEquals("_n1~>_n2~>_int2", secondEntry.getKey());
+        assertTrue(secondEntry.getValue() instanceof IntValue);
 
 
         thirdEntry = iterator.next();
-        assertEquals("_n2~>_int2", thirdEntry.getKey());
-        assertTrue(thirdEntry.getValue() instanceof IntValue);
+        assertEquals("_n1~>_n2", thirdEntry.getKey());
+        assertTrue(thirdEntry.getValue() instanceof NestedValue);
 
 
         fourthEntry = iterator.next();
-        assertEquals("_n3~>_n4", fourthEntry.getKey());
-        assertTrue(fourthEntry.getValue() instanceof NestedValue);
+        assertEquals("_n1~>_n3~>_n4~>_strTemp", fourthEntry.getKey());
+        assertTrue(fourthEntry.getValue() instanceof StringValue);
 
 
         fifthEntry = iterator.next();
-        assertEquals("_n3~>_n4~>_strTemp", fifthEntry.getKey());
-        assertTrue(fifthEntry.getValue() instanceof StringValue);
+        assertEquals("_n1~>_n3~>_n4", fifthEntry.getKey());
+        assertTrue(fifthEntry.getValue() instanceof NestedValue);
 
 
         sixthEntry = iterator.next();
-        assertEquals("_n3", sixthEntry.getKey());
+        assertEquals("_n1~>_n3", sixthEntry.getKey());
         assertTrue(sixthEntry.getValue() instanceof NestedValue);
 
 
@@ -208,7 +208,89 @@ class KvRecordIndexerTest {
     }
 
 
-    // TODO 2
+    @Test
+    void worksAsExpected2() throws Exception {
+
+        String input = "{ \"_studentDetails\" : [ { \"_username\" : \"chriniko\" } " +
+
+                "; { \"_email\" : \"chriniko\" } " +
+
+                "; { \"_address\" : [ { \"_street\" : \"Panepistimioupoli 123, Kesariani\" } " +
+                                        "; { \"_postCode\" : \"16121\" } " +
+                                        "; { \"_city\" : \"Athens\" } " +
+                                        "; { \"_country\" : \"Greece\" } ] } " +
+
+                "; { \"_name\" : [ { \"_firstname\" : \"Nikolaos\" } " +
+                                    "; { \"_surname\" : \"Christidis\" } ] } ] }";
+
+
+        System.out.println(input);
+
+
+        LinkedHashMap<String, Value<?>> r = KvRecordIndexer.process(input);
+
+        // then
+        assertNotNull(r);
+        assertEquals(11, r.size());
+
+        Set<Map.Entry<String, Value<?>>> entries = r.entrySet();
+
+        Iterator<Map.Entry<String, Value<?>>> iterator = entries.iterator();
+
+
+        Map.Entry<String, Value<?>> firstEntry = iterator.next();
+        assertEquals("_studentDetails~>_username", firstEntry.getKey());
+        assertTrue(firstEntry.getValue() instanceof StringValue);
+
+
+        Map.Entry<String, Value<?>> secondEntry = iterator.next();
+        assertEquals("_studentDetails~>_email", secondEntry.getKey());
+        assertTrue(secondEntry.getValue() instanceof StringValue);
+
+
+        Map.Entry<String, Value<?>> thirdEntry = iterator.next();
+        assertEquals("_studentDetails~>_address~>_street", thirdEntry.getKey());
+        assertTrue(thirdEntry.getValue() instanceof StringValue);
+
+
+        Map.Entry<String, Value<?>> fourthEntry = iterator.next();
+        assertEquals("_studentDetails~>_address~>_postCode", fourthEntry.getKey());
+        assertTrue(fourthEntry.getValue() instanceof StringValue);
+
+
+        Map.Entry<String, Value<?>> fifthEntry = iterator.next();
+        assertEquals("_studentDetails~>_address~>_city", fifthEntry.getKey());
+        assertTrue(fifthEntry.getValue() instanceof StringValue);
+
+        Map.Entry<String, Value<?>> sixthEntry = iterator.next();
+        assertEquals("_studentDetails~>_address~>_country", sixthEntry.getKey());
+        assertTrue(sixthEntry.getValue() instanceof StringValue);
+
+        Map.Entry<String, Value<?>> seventhEntry = iterator.next();
+        assertEquals("_studentDetails~>_address", seventhEntry.getKey());
+        assertTrue(seventhEntry.getValue() instanceof ListValue);
+
+
+        Map.Entry<String, Value<?>> eightEntry = iterator.next();
+        assertEquals("_studentDetails~>_name~>_firstname", eightEntry.getKey());
+        assertTrue(eightEntry.getValue() instanceof StringValue);
+
+
+        Map.Entry<String, Value<?>> ninthEntry = iterator.next();
+        assertEquals("_studentDetails~>_name~>_surname", ninthEntry.getKey());
+        assertTrue(ninthEntry.getValue() instanceof StringValue);
+
+
+        Map.Entry<String, Value<?>> tenthEntry = iterator.next();
+        assertEquals("_studentDetails~>_name", tenthEntry.getKey());
+        assertTrue(tenthEntry.getValue() instanceof ListValue);
+
+
+        Map.Entry<String, Value<?>> eleventhEntry = iterator.next();
+        assertEquals("_studentDetails", eleventhEntry.getKey());
+        assertTrue(eleventhEntry.getValue() instanceof ListValue);
+    }
+
 
     // TODO 3
 

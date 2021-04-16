@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class KvRecordTest {
 
@@ -39,37 +38,37 @@ public class KvRecordTest {
         Iterator<Map.Entry<String, Value<?>>> iterator = entries.iterator();
 
         Map.Entry<String, Value<?>> firstEntry = iterator.next();
-        assertEquals("_fn3~>_nf4", firstEntry.getKey());
-        assertTrue(firstEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn3~>_nf4~>_float23", firstEntry.getKey());
+        assertTrue(firstEntry.getValue() instanceof FloatValue);
 
 
         Map.Entry<String, Value<?>> secondEntry = iterator.next();
-        assertEquals("_fn3~>_nf4~>_float23", secondEntry.getKey());
-        assertTrue(secondEntry.getValue() instanceof FloatValue);
+        assertEquals("_myList~>_fn3~>_nf4", secondEntry.getKey());
+        assertTrue(secondEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> thirdEntry = iterator.next();
-        assertEquals("_fn3", thirdEntry.getKey());
+        assertEquals("_myList~>_fn3", thirdEntry.getKey());
         assertTrue(thirdEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> fourthEntry = iterator.next();
-        assertEquals("_strTemp", fourthEntry.getKey());
+        assertEquals("_myList~>_strTemp", fourthEntry.getKey());
         assertTrue(fourthEntry.getValue() instanceof StringValue);
 
 
         Map.Entry<String, Value<?>> fifthEntry = iterator.next();
-        assertEquals("_fn32~>_nf42", fifthEntry.getKey());
-        assertTrue(fifthEntry.getValue() instanceof NestedValue);
+        assertEquals("_myList~>_fn32~>_nf42~>_someOtherStr", fifthEntry.getKey());
+        assertTrue(fifthEntry.getValue() instanceof StringValue);
 
 
         Map.Entry<String, Value<?>> sixthEntry = iterator.next();
-        assertEquals("_fn32~>_nf42~>_someOtherStr", sixthEntry.getKey());
-        assertTrue(sixthEntry.getValue() instanceof StringValue);
+        assertEquals("_myList~>_fn32~>_nf42", sixthEntry.getKey());
+        assertTrue(sixthEntry.getValue() instanceof NestedValue);
 
 
         Map.Entry<String, Value<?>> seventhEntry = iterator.next();
-        assertEquals("_fn32", seventhEntry.getKey());
+        assertEquals("_myList~>_fn32", seventhEntry.getKey());
         assertTrue(seventhEntry.getValue() instanceof NestedValue);
 
 
@@ -84,36 +83,45 @@ public class KvRecordTest {
 
         Trie<KvIndexedData>.TrieStatistics trieStatistics = indexedContentsByKeyPathTrie.gatherStatisticsWithRecursion();
 
-        assertEquals(49, trieStatistics.getCountOfNoCompleteWords());
+        assertEquals(52, trieStatistics.getCountOfNoCompleteWords());
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
 
 
         final List<KvIndexedData> kvIndexedData = trieStatistics.getValues();
         assertEquals(8, kvIndexedData.size());
 
-        assertEquals("_strTemp", kvIndexedData.get(0).key());
-        assertTrue(kvIndexedData.get(0).value() instanceof StringValue);
+        assertEquals("_myList", kvIndexedData.get(0).key());
+        assertTrue(kvIndexedData.get(0).value() instanceof ListValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList").isPresent());
 
-        assertEquals("_fn3", kvIndexedData.get(1).key());
-        assertTrue(kvIndexedData.get(1).value() instanceof NestedValue);
+        assertEquals("_myList~>_strTemp", kvIndexedData.get(1).key());
+        assertTrue(kvIndexedData.get(1).value() instanceof StringValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_strTemp").isPresent());
 
-        assertEquals("_fn32", kvIndexedData.get(2).key());
+        assertEquals("_myList~>_fn3", kvIndexedData.get(2).key());
         assertTrue(kvIndexedData.get(2).value() instanceof NestedValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_fn3").isPresent());
 
-        assertEquals("_fn32~>_nf42", kvIndexedData.get(3).key());
+        assertEquals("_myList~>_fn32", kvIndexedData.get(3).key());
         assertTrue(kvIndexedData.get(3).value() instanceof NestedValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_fn32").isPresent());
 
-        assertEquals("_fn32~>_nf42~>_someOtherStr", kvIndexedData.get(4).key());
-        assertTrue(kvIndexedData.get(4).value() instanceof StringValue);
+        assertEquals("_myList~>_fn32~>_nf42", kvIndexedData.get(4).key());
+        assertTrue(kvIndexedData.get(4).value() instanceof NestedValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_fn32~>_nf42").isPresent());
 
-        assertEquals("_fn3~>_nf4", kvIndexedData.get(5).key());
-        assertTrue(kvIndexedData.get(5).value() instanceof NestedValue);
+        assertEquals("_myList~>_fn32~>_nf42~>_someOtherStr", kvIndexedData.get(5).key());
+        assertTrue(kvIndexedData.get(5).value() instanceof StringValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_fn32~>_nf42~>_someOtherStr").isPresent());
 
-        assertEquals("_fn3~>_nf4~>_float23", kvIndexedData.get(6).key());
-        assertTrue(kvIndexedData.get(6).value() instanceof FloatValue);
+        assertEquals("_myList~>_fn3~>_nf4", kvIndexedData.get(6).key());
+        assertTrue(kvIndexedData.get(6).value() instanceof NestedValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_fn3~>_nf4").isPresent());
 
-        assertEquals("_myList", kvIndexedData.get(7).key());
-        assertTrue(kvIndexedData.get(7).value() instanceof ListValue);
+        assertEquals("_myList~>_fn3~>_nf4~>_float23", kvIndexedData.get(7).key());
+        assertTrue(kvIndexedData.get(7).value() instanceof FloatValue);
+        assertTrue(indexedContentsByKeyPathTrie.find("_myList~>_fn3~>_nf4~>_float23").isPresent());
+
 
     }
 }

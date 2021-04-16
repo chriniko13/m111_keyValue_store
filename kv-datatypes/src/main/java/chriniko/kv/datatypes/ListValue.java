@@ -30,7 +30,6 @@ public final class ListValue extends Value<List<Value<?>>> {
     public String asString() {
         final StringBuilder sb = new StringBuilder();
 
-        // todo throw it away when ctor removed
         if (key != null) {
             sb.append("{ ").append("\"").append(key).append("\"").append(" : ");
         }
@@ -57,7 +56,6 @@ public final class ListValue extends Value<List<Value<?>>> {
 
         sb.append(" ]");
 
-        // todo throw it away when ctor removed
         if (key != null) {
             sb.append(" }");
         }
