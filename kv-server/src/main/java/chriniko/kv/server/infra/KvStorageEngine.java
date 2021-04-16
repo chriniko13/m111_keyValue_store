@@ -5,8 +5,13 @@ import chriniko.kv.datatypes.error.ParsingException;
 import chriniko.kv.server.error.KvServerIndexErrorException;
 import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieNode;
-import chriniko.kv.trie.TrieStatistics;
+//import chriniko.kv.trie.TrieNode;
+import chriniko.kv.trie.error.ReadLockAcquireFailureException;
+import chriniko.kv.trie.error.StaleDataOperationException;
+import chriniko.kv.trie.error.WriteLockAcquireFailureException;
+import chriniko.kv.trie.infra.TrieStatistics;
+import chriniko.kv.trie.lock_stripping.TrieLS;
+import chriniko.kv.trie.lock_stripping.TrieNodeLS;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +20,9 @@ import java.util.concurrent.ForkJoinPool;
 
 public class KvStorageEngine {
 
-    private final Trie<KvRecord> memoDb = new Trie<>();
+    //private final Trie<KvRecord> memoDb = new Trie<>();
+    private final TrieLS<KvRecord> memoDb = new TrieLS<>(400, 600);
+
 
     private final ForkJoinPool cpuBoundWorkers;
 
@@ -29,9 +36,9 @@ public class KvStorageEngine {
     }
 
     // Note: save operation behaves like upsert (insert on new, upsert/override on existing)
-    public void save(String key, Value<?> v, boolean asyncIndexing) throws KvServerIndexErrorException {
-        final TrieNode<KvRecord> justInsertedNode = memoDb.insert(key, new KvRecord(key, v));
+    public void save(String key, Value<?> v, boolean asyncIndexing) throws KvServerIndexErrorException, ReadLockAcquireFailureException, WriteLockAcquireFailureException, StaleDataOperationException {
 
+        final TrieNodeLS<KvRecord> justInsertedNode = memoDb.insert(key, new KvRecord(key, v));
 
         if (!asyncIndexing) {
             indexRecord(justInsertedNode.getData());
@@ -54,26 +61,26 @@ public class KvStorageEngine {
         }
     }
 
-    public int totalRecords() {
-        TrieStatistics trieStatistics = memoDb.gatherStatisticsWithRecursion();
+    public int totalRecords() throws ReadLockAcquireFailureException {
+        TrieStatistics<KvRecord> trieStatistics = memoDb.gatherStatisticsWithRecursion();
         int size = trieStatistics.getCountOfCompleteWords();
         System.out.println("total records: " + size);
         return size;
     }
 
-    public Value<?> fetch(String key) {
+    public Value<?> fetch(String key) throws ReadLockAcquireFailureException {
         return memoDb.find(key)
                 .map(KvRecord::value)
                 .orElse(null);
     }
 
-    public Value<?> remove(String key) {
+    public Value<?> remove(String key) throws ReadLockAcquireFailureException, WriteLockAcquireFailureException, StaleDataOperationException {
         return memoDb.delete(key)
                 .map(KvRecord::value)
                 .orElse(null);
     }
 
-    public Value<?> query(String rootKey, String queryKey, boolean useTrie) {
+    public Value<?> query(String rootKey, String queryKey, boolean useTrie) throws ReadLockAcquireFailureException {
 
         if (queryKey.isEmpty() || !queryKey.contains("~>")) {
             return fetch(rootKey);

@@ -5,7 +5,7 @@ import chriniko.kv.datatypes.error.ParsingException;
 import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.server.index.KvRecordIndexer;
 import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieEntry;
+import chriniko.kv.trie.infra.TrieEntry;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;

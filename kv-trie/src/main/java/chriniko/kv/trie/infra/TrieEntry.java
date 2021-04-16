@@ -1,5 +1,7 @@
-package chriniko.kv.trie;
+package chriniko.kv.trie.infra;
 
+
+import chriniko.kv.trie.Trie;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;

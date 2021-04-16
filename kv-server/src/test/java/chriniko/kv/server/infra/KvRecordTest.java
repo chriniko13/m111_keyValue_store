@@ -4,7 +4,7 @@ import chriniko.kv.datatypes.*;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieStatistics;
+import chriniko.kv.trie.infra.TrieStatistics;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

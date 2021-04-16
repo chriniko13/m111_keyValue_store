@@ -7,6 +7,9 @@ import chriniko.kv.protocol.ErrorTypeConstants;
 import chriniko.kv.protocol.Operations;
 import chriniko.kv.protocol.ProtocolConstants;
 import chriniko.kv.server.error.KvServerIndexErrorException;
+import chriniko.kv.trie.error.ReadLockAcquireFailureException;
+import chriniko.kv.trie.error.StaleDataOperationException;
+import chriniko.kv.trie.error.WriteLockAcquireFailureException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -90,6 +93,12 @@ public class KvRequestParser {
                 String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.INDEX_ERROR, e.getMessage());
                 writeResponseMessage(byteBuffer, errorResp);
 
+            } catch (ReadLockAcquireFailureException e) {
+                e.printStackTrace(); //TODO
+            } catch (WriteLockAcquireFailureException e) {
+                e.printStackTrace(); //TODO
+            } catch (StaleDataOperationException e) {
+                e.printStackTrace(); //TODO
             }
 
 
@@ -101,21 +110,26 @@ public class KvRequestParser {
 
             System.out.println("get operation: " + operation + " --- key: " + key);
 
-            final Value<?> result = kvStorageEngine.fetch(key);
-            if (result != null) {
+            try {
+                final Value<?> result = kvStorageEngine.fetch(key);
+                if (result != null) {
 
-                final String serializedResult = result.asString();
+                    final String serializedResult = result.asString();
 
-                final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
-                System.out.println("WILL REPLY WITH: " + okayResp);
-                writeResponseMessage(byteBuffer, okayResp);
+                    final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
+                    System.out.println("WILL REPLY WITH: " + okayResp);
+                    writeResponseMessage(byteBuffer, okayResp);
 
-            } else {
+                } else {
 
-                final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
-                System.out.println("WILL REPLY WITH: " + notFoundResp);
-                writeResponseMessage(byteBuffer, notFoundResp);
+                    final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                    System.out.println("WILL REPLY WITH: " + notFoundResp);
+                    writeResponseMessage(byteBuffer, notFoundResp);
 
+                }
+
+            } catch (ReadLockAcquireFailureException e) {
+                e.printStackTrace(); //TODO
             }
 
         } else if (messageReceivedFromBroker.startsWith(Operations.DELETE.getMsgOp())) {
@@ -126,22 +140,31 @@ public class KvRequestParser {
 
             System.out.println("delete operation: " + operation + " --- key: " + key);
 
-            final Value<?> result = kvStorageEngine.remove(key);
-            if (result != null) {
-                // delete success
-                String justDeletedSerializedRecord = result.asString();
+            try {
+                final Value<?> result = kvStorageEngine.remove(key);
+                if (result != null) {
+                    // delete success
+                    String justDeletedSerializedRecord = result.asString();
 
-                final String okayResp = ProtocolConstants.OKAY_RESP + "#" + justDeletedSerializedRecord;
-                System.out.println("WILL REPLY WITH: " + okayResp);
-                writeResponseMessage(byteBuffer, okayResp);
+                    final String okayResp = ProtocolConstants.OKAY_RESP + "#" + justDeletedSerializedRecord;
+                    System.out.println("WILL REPLY WITH: " + okayResp);
+                    writeResponseMessage(byteBuffer, okayResp);
 
-            } else {
-                // no entry exists with provided key
+                } else {
+                    // no entry exists with provided key
 
-                final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
-                System.out.println("WILL REPLY WITH: " + notFoundResp);
-                writeResponseMessage(byteBuffer, notFoundResp);
+                    final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                    System.out.println("WILL REPLY WITH: " + notFoundResp);
+                    writeResponseMessage(byteBuffer, notFoundResp);
 
+                }
+
+            } catch (ReadLockAcquireFailureException e) {
+                e.printStackTrace(); //TODO
+            } catch (WriteLockAcquireFailureException e) {
+                e.printStackTrace(); //TODO
+            } catch (StaleDataOperationException e) {
+                e.printStackTrace(); //TODO
             }
 
         } else if (messageReceivedFromBroker.startsWith(Operations.QUERY.getMsgOp())) {
@@ -157,21 +180,26 @@ public class KvRequestParser {
 
             System.out.println("query operation: " + operation + " --- query received: " + key);
 
-            final Value<?> result = kvStorageEngine.query(rootKey, queryKey, kvServerConfig.isUseTrieForQuerySearch());
-            if (result != null) {
+            try {
+                final Value<?> result = kvStorageEngine.query(rootKey, queryKey, kvServerConfig.isUseTrieForQuerySearch());
+                if (result != null) {
 
-                final String serializedResult = result.asString();
+                    final String serializedResult = result.asString();
 
-                final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
-                System.out.println("WILL REPLY WITH: " + okayResp);
-                writeResponseMessage(byteBuffer, okayResp);
+                    final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
+                    System.out.println("WILL REPLY WITH: " + okayResp);
+                    writeResponseMessage(byteBuffer, okayResp);
 
-            } else {
+                } else {
 
-                final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
-                System.out.println("WILL REPLY WITH: " + notFoundResp);
-                writeResponseMessage(byteBuffer, notFoundResp);
+                    final String notFoundResp = ProtocolConstants.NOT_FOUND_RESP;
+                    System.out.println("WILL REPLY WITH: " + notFoundResp);
+                    writeResponseMessage(byteBuffer, notFoundResp);
 
+                }
+
+            } catch (ReadLockAcquireFailureException e) {
+                e.printStackTrace(); //TODO
             }
 
         } else {

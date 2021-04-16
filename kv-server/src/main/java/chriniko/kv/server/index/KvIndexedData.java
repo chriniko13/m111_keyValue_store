@@ -2,7 +2,7 @@ package chriniko.kv.server.index;
 
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieEntry;
+import chriniko.kv.trie.infra.TrieEntry;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;

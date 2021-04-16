@@ -1,7 +1,7 @@
 package trie;
 
 import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieEntry;
+import chriniko.kv.trie.infra.TrieEntry;
 import lombok.ToString;
 
 import java.time.Instant;

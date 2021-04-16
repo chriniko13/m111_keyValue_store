@@ -1,8 +1,10 @@
 package trie;
 
-import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieNode;
+import chriniko.kv.trie.error.ReadLockAcquireFailureException;
+import chriniko.kv.trie.error.WriteLockAcquireFailureException;
 import chriniko.kv.trie.infra.TrieStatistics;
+import chriniko.kv.trie.lock_stripping.TrieLS;
+import chriniko.kv.trie.lock_stripping.TrieNodeLS;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,14 +19,13 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class TrieTest {
-
+public class TrieLSTest {
 
     @Test
-    void insertOverrideWorksAsExpected() {
+    void insertOverrideWorksAsExpected() throws Exception {
 
         // given
-        Trie<Record> trie = new Trie<>();
+        TrieLS<Record> trie = new TrieLS<>(400, 500);
 
 
         trie.insert("bear", new Record());
@@ -38,7 +39,7 @@ class TrieTest {
 
 
         // when
-        TrieNode<Record> trieNode = trie.insert("bear", new Record());
+        TrieNodeLS<Record> trieNode = trie.insert("bear", new Record());
 
 
         // then
@@ -61,12 +62,11 @@ class TrieTest {
         assertEquals(14, trieStatistics.getCountOfNoCompleteWords());
     }
 
-
     @Test
-    void insertWorksAsExpected() {
+    void insertWorksAsExpected() throws Exception {
 
         // given
-        Trie<Record> trie = new Trie<>();
+        TrieLS<Record> trie = new TrieLS<>(400, 500);
 
 
         // when
@@ -78,8 +78,6 @@ class TrieTest {
         trie.insert("sell", new Record());
         trie.insert("stock", new Record());
         trie.insert("stop", new Record());
-
-        trie.insert("bear", new Record());
 
 
         // then
@@ -99,15 +97,15 @@ class TrieTest {
     }
 
     @Test
-    void findWorksAsExpected() {
+    void findWorksAsExpected() throws Exception {
 
         // given
-        Trie<Record> trie = new Trie<>();
+        TrieLS<Record> trie = new TrieLS<>(400, 500);
 
         trie.insert("bear", new Record());
         trie.insert("bell", new Record());
 
-        TrieNode<Record> justInsertedNode = trie.insert("bid", new Record());
+        TrieNodeLS<Record> justInsertedNode = trie.insert("bid", new Record());
         assertEquals("bid", justInsertedNode.getData().key());
         assertNotNull(justInsertedNode.getData().value());
         assertEquals("bid", justInsertedNode.getPrefix());
@@ -138,10 +136,10 @@ class TrieTest {
     }
 
     @Test
-    void deleteWorksAsExpected() {
+    void deleteWorksAsExpected() throws Exception {
 
         // given
-        Trie<Record> trie = new Trie<>();
+        TrieLS<Record> trie = new TrieLS<>(400, 500);
 
         trie.insert("bear", new Record());
         trie.insert("bell", new Record());
@@ -185,10 +183,10 @@ class TrieTest {
     }
 
     @Test
-    void keysWithPrefixWorksAsExpected() {
+    void keysWithPrefixWorksAsExpected() throws Exception {
 
         // given
-        Trie<Record> trie = new Trie<>();
+        TrieLS<Record> trie = new TrieLS<>(400, 500);
 
         trie.insert("bear", new Record());
         trie.insert("bell", new Record());
@@ -263,6 +261,7 @@ class TrieTest {
     }
 
 
+
     // --- multi threading test ---
 
     @Test
@@ -278,7 +277,7 @@ class TrieTest {
 
         final int totalRuns = 5;
 
-        final Trie<Record> trie = new Trie<>();
+        TrieLS<Record> trie = new TrieLS<>(400, 500);
 
         final int writers = threads / 2;
         System.out.println("writers: " + writers);
@@ -312,6 +311,7 @@ class TrieTest {
 
                 // actual work
                 for (String id : ids) {
+
                     Record record = new Record();
                     record.setKey(id);
 
@@ -337,7 +337,14 @@ class TrieTest {
             rendezvousRef.set(new CyclicBarrier(writers, () -> System.out.println("LET'S ROLL!!!")));
             workFinishedRef.set(new CountDownLatch(writers));
 
-            trie.clear();
+            try {
+                trie.clear();
+            } catch (WriteLockAcquireFailureException e) {
+                e.printStackTrace(System.err);
+                fail(e);
+                junitThread.interrupt();
+            }
+
             System.out.println("\n\nrun: " + i);
 
 
@@ -361,7 +368,15 @@ class TrieTest {
                 junitThread.interrupt();
             }
 
-            TrieStatistics<Record> trieStatistics = trie.gatherStatisticsWithRecursion();
+
+            TrieStatistics<Record> trieStatistics = null;
+            try {
+                trieStatistics = trie.gatherStatisticsWithRecursion();
+            } catch (ReadLockAcquireFailureException e) {
+                e.printStackTrace(System.err);
+                fail(e);
+                junitThread.interrupt();
+            }
 
 
             int countOfCompleteWordsWithOldData = trieStatistics.getCountOfCompleteWordsWithOldData();
@@ -375,9 +390,9 @@ class TrieTest {
             int actualTotal = countOfCompleteWords + countOfCompleteWordsWithOldData;
             System.out.println("totalEntries: " + ids.size() + " --- actualTotal: " + actualTotal);
 
-
             int expectedTotal = writers * ids.size();
             System.out.println("expectedTotal: " + expectedTotal);
+
 
 
         }
@@ -386,5 +401,6 @@ class TrieTest {
         // clear
         workers.shutdown();
     }
+
 
 }

@@ -1,5 +1,8 @@
 package chriniko.kv.trie;
 
+import chriniko.kv.trie.infra.TrieEntry;
+import chriniko.kv.trie.infra.TrieStatistics;
+
 import java.util.*;
 
 public class Trie<T extends TrieEntry<?>> {
@@ -28,11 +31,25 @@ public class Trie<T extends TrieEntry<?>> {
         TrieNode<T> current = root;
 
         char[] chars = key.toCharArray();
+
+        final char lastChar =  chars[chars.length - 1];
+
+        boolean overrideHappened = false;
+
         for (char aChar : chars) {
+
+            final boolean isLastChar =  aChar == lastChar;
 
             sb.append(aChar);
 
             final TrieNode<T> existing = current.getChildren().get(aChar);
+
+            if (!overrideHappened
+                    && isLastChar
+                    && existing != null) {
+                overrideHappened = true;
+            }
+
             if (existing == null) {
 
                 TrieNode<T> newChild = new TrieNode<>();
@@ -43,10 +60,19 @@ public class Trie<T extends TrieEntry<?>> {
             }
 
             current = current.getChildren().get(aChar);
-
         }
 
-        String s = sb.toString();
+        // -------------------------------------------------------------------------------------------------------------
+
+        final String s = sb.toString();
+
+        if (overrideHappened) {
+            if (current.getData() != null) {
+                current.getData().triggerUpdateTime();
+            }
+            current.storeDataAsOld();
+        }
+
         current.setCompleteWord(true);
         current.setPrefix(s);
         current.setData(data);
@@ -123,6 +149,9 @@ public class Trie<T extends TrieEntry<?>> {
             }
         }
 
+
+        // -------------------------------------------------------------------------------------------------------------
+
         // Note: return true if and only if the currently examined subtrie is completely empty.
         return current.getData() == null
                 && current.getChildren().isEmpty();
@@ -185,21 +214,23 @@ public class Trie<T extends TrieEntry<?>> {
 
         int[] countOfNoCompleteWords = new int[]{0};
         int[] countOfCompleteWords = new int[]{0};
+        int[] countOfCompleteWordsWithOldData = new int[]{0};
 
-        _gatherStatistics(root, values, countOfNoCompleteWords, countOfCompleteWords);
+        _gatherStatistics(root, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
 
-        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], values);
+        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], countOfCompleteWordsWithOldData[0], values);
 
     }
 
     // Note: nice to have ===> gatherStatisticsWithIteration [TODO]
 
     private void _gatherStatistics(TrieNode<T> current, List<T> values,
-                                   int[] countOfNoCompleteWords, int[] countOfCompleteWords) {
+                                   int[] countOfNoCompleteWords, int[] countOfCompleteWords, int[] countOfCompleteWordsWithOldData) {
 
 
         if (current.isCompleteWord()) {
             countOfCompleteWords[0] += 1;
+            countOfCompleteWordsWithOldData[0] += current.getOldData().size();
 
             values.add(current.getData());
         } else {
@@ -209,7 +240,7 @@ public class Trie<T extends TrieEntry<?>> {
 
         HashMap<Character, TrieNode<T>> children = current.getChildren();
         for (TrieNode<T> value : children.values()) {
-            _gatherStatistics(value, values, countOfNoCompleteWords, countOfCompleteWords);
+            _gatherStatistics(value, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
         }
 
     }

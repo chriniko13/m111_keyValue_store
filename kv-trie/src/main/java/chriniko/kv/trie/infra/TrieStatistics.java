@@ -1,4 +1,4 @@
-package chriniko.kv.trie;
+package chriniko.kv.trie.infra;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @Getter
 public class TrieStatistics<T> {
+
     private final int countOfNoCompleteWords;
+
     private final int countOfCompleteWords;
+    private final int countOfCompleteWordsWithOldData;
+
     private final List<T> values;
 }
