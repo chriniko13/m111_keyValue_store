@@ -11,7 +11,9 @@ redirecting requests to the Key-Value servers, collecting the results and presen
 
 ### How to run
 
-* Execute: `java -jar kv-broker/target/kv-broker-1.0-SNAPSHOT-jar-with-dependencies.jar ~/Desktop/m111_kv_christidis_nikolaos/kv-broker/sampleServerFile.txt 3`
+* Execute: 
+    * eg: `java -jar kv-broker/target/kv-broker-1.0-SNAPSHOT-jar-with-dependencies.jar ~/Desktop/m111_kv_christidis_nikolaos/kv-broker/sampleServerFile.txt 3`
+    * eg: `java -jar kv-broker/target/kv-broker-1.0-SNAPSHOT-jar-with-dependencies.jar ~/Desktop/m111_kv_christidis_nikolaos/kv-broker/sampleServerFile.txt ~/Desktop/m111_kv_christidis_nikolaos/kv-broker/sampleData.txt 3`
     * Sample output:
       ```text
             nchristidis@nchristidis-gl502vmk ~/Desktop/m111_kv_christidis_nikolaos (main)$ java -jar kv-server/target/kv-server-1.0-SNAPSHOT-jar-with-dependencies.jar 127.0.0.1 8081

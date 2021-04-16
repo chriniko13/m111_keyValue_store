@@ -99,63 +99,84 @@ public class BootstrapKvBroker {
 
         // ============================================================================================================================================================
         // then proceed with setting up the broker....
+        final BufferedReader bufferedReader; // arg: i (dataToIndex.txt)
+        final int replicationFactor;
+
         if (dataToIndexFilePathProvided) { // args.length == 3
 
 
-            //TODO...
+            String dataToIndexFilePath = args[1];
+            try {
+                Path p = Paths.get(dataToIndexFilePath);
+                bufferedReader = Files.newBufferedReader(p);
+            } catch (IOException e) {
+                System.err.println("not valid dataToIndexFilePath provided");
+                System.exit(-16);
+                throw new IllegalStateException(); // to satisfy the compiler.
+            }
 
+            String replicationFactorStr = args[2];
+            try {
+                replicationFactor = Integer.parseInt(replicationFactorStr);
+            } catch (NumberFormatException e) {
+                System.err.println("not valid replicationFactor provided");
+                System.exit(-17);
+                throw new IllegalStateException(); // to satisfy the compiler.
+            }
 
 
         } else { // args.length == 2
 
             String replicationFactorStr = args[1];
-
             try {
-                Integer.parseInt(replicationFactorStr);
+                replicationFactor = Integer.parseInt(replicationFactorStr);
             } catch (NumberFormatException e) {
                 System.err.println("not valid replicationFactor provided");
-                System.exit(-6);
+                System.exit(-26);
                 throw new IllegalStateException(); // to satisfy the compiler.
             }
 
 
-            BufferedReader bufferedReader; // arg: i (dataToIndex.txt)
             InputStream in = BootstrapKvBroker.class.getResourceAsStream("/sampleDataToIndex.txt");
             bufferedReader = new BufferedReader(new InputStreamReader(in));
+        }
 
 
-            try {
-                KvBroker kvBroker = new KvBroker();
-                kvBroker.start(kvServerContactPoints, bufferedReader, true, Integer.parseInt(replicationFactorStr), null);
-
-                System.out.println("kv-broker started up and connected to all kv-server-contact-points: " + kvServerContactPoints);
-                System.out.println("ready for action....");
 
 
-                while (true) ; // Note: keep up, so driver-program (user of broker) can execute other methods of the broker.
+        // ============================================================================================================================================================
+        // start the broker....
+        try {
+            KvBroker kvBroker = new KvBroker();
+            kvBroker.start(kvServerContactPoints, bufferedReader, true, replicationFactor, null);
 
-            } catch (NotOkayResponseException e) {
-                System.err.println("not okay response received, error: " + e.getMessage());
+            System.out.println("kv-broker started up and connected to all kv-server-contact-points: " + kvServerContactPoints);
+            System.out.println("ready for action....");
 
-                e.printStackTrace(System.err);
 
-                System.exit(-1);
+            //TODO implement CLI...
+            while (true) ; // Note: keep up, so driver-program (user of broker) can execute other methods of the broker.
 
-            } catch (IOException e) {
-                System.err.println("connectivity issue experienced: " + e.getMessage());
+        } catch (NotOkayResponseException e) {
+            System.err.println("not okay response received, error: " + e.getMessage());
 
-                e.printStackTrace(System.err);
+            e.printStackTrace(System.err);
 
-                System.exit(-2);
+            System.exit(-1);
 
-            } catch (ErrorReceivedFromKvServerException e) {
-                System.err.println("kv server error response experienced: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("connectivity issue experienced: " + e.getMessage());
 
-                e.printStackTrace(System.err);
+            e.printStackTrace(System.err);
 
-                System.exit(-3);
-            }
+            System.exit(-2);
 
+        } catch (ErrorReceivedFromKvServerException e) {
+            System.err.println("kv server error response experienced: " + e.getMessage());
+
+            e.printStackTrace(System.err);
+
+            System.exit(-3);
         }
 
 

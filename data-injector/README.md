@@ -17,7 +17,9 @@ key2, key3, etc. for easier debugging.
 
 ### How to run
 
-* Execute the jar with your selected input parameters, eg: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50`
+* Execute the jar with your selected input parameters:
+  * eg: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50`
+  * eg: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 3000 3 12 45`
   * Sample output:
   ```text
     nchristidis@nchristidis-gl502vmk ~/Desktop/m111_kv_christidis_nikolaos (main)$ java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50

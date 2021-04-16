@@ -63,9 +63,8 @@ FloatValue:  DIGIT+ '.' DIGIT+
 ID: '"' [_][a-z][A-Za-z0-9_-]* '"'
 ;
 
-StringValue: '"' [.A-Za-z0-9_\t ,-]* '"'
+StringValue: '"' ['.A-Za-z0-9_\t ,-]* '"'
 ;
-
 
 EmptyValue: WS* '{' WS* '}' WS*
 ;
