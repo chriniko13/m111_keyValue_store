@@ -15,48 +15,9 @@ key2, key3, etc. for easier debugging.
 
 
 
-### How to run tests
-* `mvn clean test`
+### How to run
 
-### How to build and run jar
-* `mvn clean install` (on the root module: `m111_kv_nikolaos_christidis`)
-    * Sample output:
-    ```text
-      nchristidis@nchristidis-gl502vmk ~/Desktop/m111_kv_christidis_nikolaos (main)$ mvn clean install
-      [INFO] Scanning for projects...
-      [INFO] ------------------------------------------------------------------------
-      [INFO] Reactor Build Order:
-      [INFO]
-      [INFO] m111_kv_christidis_nikolaos                                        [pom]
-      [INFO] data-injector                                                      [jar]
-      [INFO] kv-broker                                                          [jar]
-      [INFO] kv-server                                                          [jar]
-      [INFO] kv-storage                                                         [jar]
-      [INFO]
-      [INFO] --------------< org.example:m111_kv_christidis_nikolaos >---------------
-      [INFO] Building m111_kv_christidis_nikolaos 1.0-SNAPSHOT                  [1/5]
-      [INFO] --------------------------------[ pom ]---------------------------------
-      [INFO]
-  
-      .....
-
-      [INFO] Reactor Summary for m111_kv_christidis_nikolaos 1.0-SNAPSHOT:
-      [INFO]
-      [INFO] m111_kv_christidis_nikolaos ........................ SUCCESS [  0.262 s]
-      [INFO] data-injector ...................................... SUCCESS [  4.830 s]
-      [INFO] kv-broker .......................................... SUCCESS [  0.067 s]
-      [INFO] kv-server .......................................... SUCCESS [  0.058 s]
-      [INFO] kv-storage ......................................... SUCCESS [  0.028 s]
-      [INFO] ------------------------------------------------------------------------
-      [INFO] BUILD SUCCESS
-      [INFO] ------------------------------------------------------------------------
-      [INFO] Total time:  5.348 s
-      [INFO] Finished at: 2021-03-14T11:56:24+02:00
-      [INFO] ------------------------------------------------------------------------
-    ```
-
-
-* So now execute the jar with your selected input parameters, eg: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50`
+* Execute the jar with your selected input parameters, eg: `java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50`
   * Sample output:
   ```text
     nchristidis@nchristidis-gl502vmk ~/Desktop/m111_kv_christidis_nikolaos (main)$ java -jar data-injector/target/data-injector-1.0-SNAPSHOT-jar-with-dependencies.jar 10 1 10 50

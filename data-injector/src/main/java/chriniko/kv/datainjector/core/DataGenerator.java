@@ -81,8 +81,7 @@ public final class DataGenerator {
 
         } else {
             try {
-                //TODO test if it works...
-                keyFileBufferedReader = Files.newBufferedReader(Paths.get(URI.create(keyFile)));
+                keyFileBufferedReader = Files.newBufferedReader(Paths.get(keyFile));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
