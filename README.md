@@ -186,6 +186,9 @@ The `kv-infra` consists from the following modules:
 
 <hr/>
 
+* [sample-app](sample-app/README.md) due to the nature of `kv-broker` which has been developed to be an artifact (api library) and not
+a CLI, this module is a simple app which makes use of the `kv-broker` library to interact with the `kv-server`.
+
 ### Run all tests
 * For running all tests execute: `mvn clean test`.
 
@@ -253,6 +256,9 @@ The `kv-infra` consists from the following modules:
         * ![](actuator2.png)
         * ![](actuator3.png)
 
+
+* Now, you can run the [sample-app](sample-app/README.md) which is doing a short demonstration of `kv-broker` library.
+    * eg: ` java -jar sample-app/target/sample-app-1.0-SNAPSHOT-jar-with-dependencies.jar localhost 8081 8082 8083`
 
 <hr/>
 

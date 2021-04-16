@@ -16,6 +16,7 @@
         <module>kv-protocol</module>
         <module>kv-datatypes</module>
         <module>kv-trie</module>
+        <module>sample-app</module>
     </modules>
 
     <properties>
