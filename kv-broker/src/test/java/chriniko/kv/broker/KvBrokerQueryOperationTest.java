@@ -5,6 +5,7 @@ import chriniko.kv.broker.api.KvServerContactPoint;
 import chriniko.kv.broker.api.QueryKey;
 import chriniko.kv.broker.error.response.ErrorReceivedFromKvServerException;
 import chriniko.kv.broker.operation.KvBroker;
+import chriniko.kv.datatypes.ListValue;
 import chriniko.kv.datatypes.StringValue;
 import chriniko.kv.datatypes.Value;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
@@ -21,7 +22,6 @@ import java.util.Optional;
 import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KvBrokerQueryOperationTest {
 
@@ -37,7 +37,6 @@ public class KvBrokerQueryOperationTest {
     void afterEach() {
         workerPool.shutdown();
     }
-
 
 
     @Test
@@ -114,8 +113,7 @@ public class KvBrokerQueryOperationTest {
         if (!reachedZero) fail("broker could not start");
 
 
-        // =============================================================================================================
-        // given
+        // given (add data so that we can test query)
         kvBroker.put("chrinikoData",
                 DatatypesAntlrParser.process("{ \"_studentDetails\" : [ { \"_username\" : \"chriniko\" } ; { \"_email\" : \"chriniko\" } ; { \"_address\" : [ { \"_street\" : \"Panepistimioupoli 123, Kesariani\" } ; { \"_postCode\" : \"16121\" } ; { \"_city\" : \"Athens\" } ; { \"_country\" : \"Greece\" } ] } ; { \"_name\" : [ { \"_firstname\" : \"Nikolaos\" } ; { \"_surname\" : \"Christidis\" } ] } ] }"),
                 ConsistencyLevel.QUORUM);
@@ -140,10 +138,9 @@ public class KvBrokerQueryOperationTest {
         assertTrue(searchResult.isPresent());
 
 
-
+        // =============================================================================================================
         // when
-        Optional<Value<?>> queryResult = kvBroker.query("chrinikoData", QueryKey.build("_studentDetails", "_username"), ConsistencyLevel.ONE);
-
+        Optional<Value<?>> queryResult = kvBroker.query("chrinikoData", QueryKey.build("_studentDetails", "_username"), ConsistencyLevel.QUORUM);
 
 
         // then
@@ -157,6 +154,76 @@ public class KvBrokerQueryOperationTest {
         assertEquals("chriniko", stringValue.getValue());
 
 
+        // =============================================================================================================
+        // when
+        queryResult = kvBroker.query("chrinikoData", QueryKey.build("_studentDetails", "_address", "_street"), ConsistencyLevel.QUORUM);
+
+
+        // then
+        assertTrue(queryResult.isPresent());
+
+        value = queryResult.get();
+        assertTrue(value instanceof StringValue);
+        stringValue = (StringValue) value;
+        assertEquals("_street", stringValue.getKey());
+        assertEquals("Panepistimioupoli 123, Kesariani", stringValue.getValue());
+
+
+        // =============================================================================================================
+        // when
+        queryResult = kvBroker.query("chrinikoData", QueryKey.build("_studentDetails", "_name"), ConsistencyLevel.QUORUM);
+
+
+        // then
+        assertTrue(queryResult.isPresent());
+
+        value = queryResult.get();
+        assertTrue(value instanceof ListValue);
+
+        ListValue listValue = (ListValue) value;
+
+        Value<?> firstValue = listValue.getValue().get(0);
+        assertTrue(firstValue instanceof StringValue);
+        assertEquals("_firstname", firstValue.getKey());
+        assertEquals("Nikolaos", firstValue.getValue());
+
+
+        Value<?> secondValue = listValue.getValue().get(1);
+        assertTrue(secondValue instanceof StringValue);
+        assertEquals("_surname", secondValue.getKey());
+        assertEquals("Christidis", secondValue.getValue());
+
+
+        // =============================================================================================================
+        // when
+        queryResult = kvBroker.query("chrinikoData", QueryKey.build("_studentDetails", "_name", "_firstname"), ConsistencyLevel.QUORUM);
+
+
+        // then
+        assertTrue(queryResult.isPresent());
+
+        value = queryResult.get();
+        assertTrue(value instanceof StringValue);
+        stringValue = (StringValue) value;
+        assertEquals("_firstname", stringValue.getKey());
+        assertEquals("Nikolaos", stringValue.getValue());
+
+
+        // =============================================================================================================
+        // when
+        queryResult = kvBroker.query("chrinikoData", QueryKey.build("_studentDetails", "_name", "_surname"), ConsistencyLevel.QUORUM);
+
+
+        // then
+        assertTrue(queryResult.isPresent());
+
+        value = queryResult.get();
+        assertTrue(value instanceof StringValue);
+        stringValue = (StringValue) value;
+        assertEquals("_surname", stringValue.getKey());
+        assertEquals("Christidis", stringValue.getValue());
+
+
         // clear
         kvBroker.stop();
         kvServer1.stop();
@@ -164,7 +231,6 @@ public class KvBrokerQueryOperationTest {
         kvServer3.stop();
 
     }
-
 
 
 }

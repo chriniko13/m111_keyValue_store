@@ -8,18 +8,46 @@ import chriniko.kv.trie.Trie;
 import chriniko.kv.trie.TrieNode;
 
 import java.util.LinkedHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ForkJoinPool;
 
 public class KvStorageEngine {
 
     private final Trie<KvRecord> memoDb = new Trie<>();
 
-    // Note: save operation behaves like upsert (insert on new, upsert/override on existing)
-    public void save(String key, Value<?> v) throws KvServerIndexErrorException {
-        TrieNode<KvRecord> justInsertedNode = memoDb.insert(key, new KvRecord(key, v));
+    private final ForkJoinPool cpuBoundWorkers;
 
-        //todo this can be made async...
+    public KvStorageEngine() {
+        cpuBoundWorkers = new ForkJoinPool();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("will shutdown cpuBoundWorkers forkJoinPool...");
+            cpuBoundWorkers.shutdown();
+        }));
+    }
+
+    // Note: save operation behaves like upsert (insert on new, upsert/override on existing)
+    public void save(String key, Value<?> v, boolean asyncIndexing) throws KvServerIndexErrorException {
+        final TrieNode<KvRecord> justInsertedNode = memoDb.insert(key, new KvRecord(key, v));
+
+
+        if (!asyncIndexing) {
+            indexRecord(justInsertedNode.getData());
+        } else {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    indexRecord(justInsertedNode.getData());
+                } catch (KvServerIndexErrorException e) {
+                    throw new CompletionException(e);
+                }
+            }, cpuBoundWorkers);
+        }
+    }
+
+    private void indexRecord(KvRecord kvRecord) throws KvServerIndexErrorException {
         try {
-            justInsertedNode.getData().indexContents();
+            kvRecord.indexContents();
         } catch (ParsingException e) {
             throw new KvServerIndexErrorException("indexContents failed - seems like a bug error", e);
         }
@@ -61,8 +89,9 @@ public class KvStorageEngine {
             if (useTrie) {
 
                 // indexed search with trie is O(n) where n is the length of the keypath/keys
-                Trie<KvIndexedData> indexedDataTrie = record.getIndexedContentsByKeyPathTrie();
-                KvIndexedData indexedData = indexedDataTrie.find(queryKey).orElse(null);
+                final Trie<KvIndexedData> indexedDataTrie = record.getIndexedContentsByKeyPathTrie();
+
+                final KvIndexedData indexedData = indexedDataTrie.find(queryKey).orElse(null);
                 if (indexedData == null) {
                     System.out.println("indexed data (trie) retrieved: null");
                     return null;
@@ -75,8 +104,9 @@ public class KvStorageEngine {
             } else {
 
                 // indexed search with map is O(1)
-                LinkedHashMap<String, Value<?>> indexedData = record.getIndexedContentsByKeyPath();
-                Value<?> value = indexedData.get(queryKey);
+                final LinkedHashMap<String, Value<?>> indexedData = record.getIndexedContentsByKeyPath();
+
+                final Value<?> value = indexedData.get(queryKey);
                 System.out.println("indexed data (map) retrieved: " + value);
                 return value;
 

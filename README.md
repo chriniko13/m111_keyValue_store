@@ -103,7 +103,10 @@ The `kv-infra` consists from the following modules:
         by using ANTLR4 defined grammar in `kv-datatypes`.
         So, I have created a listener [KvDatatypesIndexingListener.java](kv-server/src/main/java/chriniko/kv/server/index/KvDatatypesIndexingListener.java) which process the input string
         and returns a `LinkedHashMap<String, Value<?>>` which for each entry the key contains the key path and for the value the indexed record.
+        <br/>
+        <br/>
         The indexing process takes place during insert of the record (pre-calculation) which also can happen in an asynchronous manner for leveraging the hardware.
+        ![](asyncIndexing.png)
         <br/>
         <br/>
     * Example:

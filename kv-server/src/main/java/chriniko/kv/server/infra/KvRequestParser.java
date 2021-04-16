@@ -67,7 +67,7 @@ public class KvRequestParser {
             try {
                 System.out.println("SERIALIZED VALUE: " + serializedValue);
                 final Value<?> deserializedValue = DatatypesAntlrParser.process(serializedValue);
-                kvStorageEngine.save(key, deserializedValue);
+                kvStorageEngine.save(key, deserializedValue, false);
 
                 String okayResp = ProtocolConstants.OKAY_RESP;
                 System.out.println("WILL REPLY WITH: " + okayResp);

@@ -48,5 +48,5 @@ public interface KvBrokerApi {
             ReplicationFactorNotApplicableException, QuorumNotApplicableException;
 
 
-    Optional<Value<?>> query(String key, QueryKey queryKey, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException;
+    Optional<Value<?>> query(String key, QueryKey queryKey, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException, QuorumNotApplicableException, NotAllKvServersAreUpException, ReplicationFactorNotApplicableException;
 }

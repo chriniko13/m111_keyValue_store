@@ -269,7 +269,7 @@ public class KvBroker implements KvBrokerApi {
 
 
     @Override
-    public Optional<Value<?>> query(String key, QueryKey queryKey, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException {
+    public Optional<Value<?>> query(String key, QueryKey queryKey, ConsistencyLevel consistencyLevel) throws NotAtLeastOneKvServerUpException, IOException, ErrorReceivedFromKvServerException, QuorumNotApplicableException, NotAllKvServersAreUpException, ReplicationFactorNotApplicableException {
 
         return kvBrokerQueryOperation.process(key, queryKey, consistencyLevel,
 
