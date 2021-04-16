@@ -6,6 +6,7 @@ import chriniko.kv.server.error.KvServerIndexErrorException;
 import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.trie.Trie;
 import chriniko.kv.trie.TrieNode;
+import chriniko.kv.trie.TrieStatistics;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +55,7 @@ public class KvStorageEngine {
     }
 
     public int totalRecords() {
-        Trie<KvRecord>.TrieStatistics trieStatistics = memoDb.gatherStatisticsWithRecursion();
+        TrieStatistics trieStatistics = memoDb.gatherStatisticsWithRecursion();
         int size = trieStatistics.getCountOfCompleteWords();
         System.out.println("total records: " + size);
         return size;

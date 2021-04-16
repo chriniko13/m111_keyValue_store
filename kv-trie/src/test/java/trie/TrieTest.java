@@ -1,14 +1,14 @@
 package trie;
 
 import chriniko.kv.trie.Trie;
-import chriniko.kv.trie.TrieEntry;
 import chriniko.kv.trie.TrieNode;
-import lombok.ToString;
+import chriniko.kv.trie.TrieStatistics;
+import com.github.javafaker.Faker;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,12 +36,12 @@ class TrieTest {
         // then
         System.out.println(trie);
 
-        Trie<Record>.TrieStatistics trieStatistics = trie.gatherStatisticsWithRecursion();
+        TrieStatistics<Record> trieStatistics = trie.<Record>gatherStatisticsWithRecursion();
         System.out.println(trieStatistics);
 
         assertEquals(
                 Set.of("bear", "bell", "bid", "bull", "buy", "sell", "stock", "stop"),
-                trieStatistics.getValues().stream().map(r -> r.key).collect(Collectors.toSet())
+                trieStatistics.getValues().stream().map(Record::key).collect(Collectors.toSet())
         );
 
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
@@ -60,8 +60,8 @@ class TrieTest {
         trie.insert("bell", new Record());
 
         TrieNode<Record> justInsertedNode = trie.insert("bid", new Record());
-        assertEquals("bid", justInsertedNode.getData().key);
-        assertNotNull(justInsertedNode.getData().value);
+        assertEquals("bid", justInsertedNode.getData().key());
+        assertNotNull(justInsertedNode.getData().value());
         assertEquals("bid", justInsertedNode.getPrefix());
         assertTrue(justInsertedNode.isCompleteWord());
 
@@ -70,7 +70,7 @@ class TrieTest {
 
         // then
         Assertions.assertTrue(r.isPresent());
-        Assertions.assertNotNull(r.get().value);
+        Assertions.assertNotNull(r.get().value());
 
 
         // when
@@ -85,7 +85,7 @@ class TrieTest {
 
         // then
         Assertions.assertTrue(r.isPresent());
-        Assertions.assertNotNull(r.get().value);
+        Assertions.assertNotNull(r.get().value());
 
     }
 
@@ -105,11 +105,11 @@ class TrieTest {
         trie.insert("stop", new Record());
 
 
-        Trie<Record>.TrieStatistics trieStatistics = trie.gatherStatisticsWithRecursion();
+        TrieStatistics<Record> trieStatistics = trie.gatherStatisticsWithRecursion();
 
         assertEquals(
                 Set.of("bear", "bell", "bid", "bull", "buy", "sell", "stock", "stop"),
-                trieStatistics.getValues().stream().map(r -> r.key).collect(Collectors.toSet())
+                trieStatistics.getValues().stream().map(r -> r.key()).collect(Collectors.toSet())
         );
 
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
@@ -122,7 +122,7 @@ class TrieTest {
 
         // then
         Assertions.assertTrue(deleted.isPresent());
-        Assertions.assertEquals("bear", deleted.get().key);
+        Assertions.assertEquals("bear", deleted.get().key());
 
         Optional<Record> searchResult = trie.find("bear");
         Assertions.assertTrue(searchResult.isEmpty());
@@ -152,11 +152,11 @@ class TrieTest {
         trie.insert("stop", new Record());
 
 
-        Trie<Record>.TrieStatistics trieStatistics = trie.gatherStatisticsWithRecursion();
+        TrieStatistics<Record> trieStatistics = trie.gatherStatisticsWithRecursion();
 
         assertEquals(
                 Set.of("bear", "bell", "bid", "bull", "buy", "sell", "stock", "stop"),
-                trieStatistics.getValues().stream().map(r -> r.key).collect(Collectors.toSet())
+                trieStatistics.getValues().stream().map(r -> r.key()).collect(Collectors.toSet())
         );
 
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
@@ -169,7 +169,7 @@ class TrieTest {
 
         // then
         Assertions.assertEquals(5, records.size());
-        Set<String> actual = records.stream().map(r -> r.key).collect(Collectors.toSet());
+        Set<String> actual = records.stream().map(r -> r.key()).collect(Collectors.toSet());
         Set<String> expected = Set.of("bear", "bell", "bid", "bull", "buy");
         Assertions.assertEquals(expected, actual);
 
@@ -180,7 +180,7 @@ class TrieTest {
 
         // then
         Assertions.assertEquals(2, records.size());
-        actual = records.stream().map(r -> r.key).collect(Collectors.toSet());
+        actual = records.stream().map(r -> r.key()).collect(Collectors.toSet());
         expected = Set.of("bull", "buy");
         Assertions.assertEquals(expected, actual);
 
@@ -191,7 +191,7 @@ class TrieTest {
 
         // then
         Assertions.assertEquals(2, records.size());
-        actual = records.stream().map(r -> r.key).collect(Collectors.toSet());
+        actual = records.stream().map(r -> r.key()).collect(Collectors.toSet());
         expected = Set.of("stock", "stop");
         Assertions.assertEquals(expected, actual);
 
@@ -202,65 +202,113 @@ class TrieTest {
 
         // then
         Assertions.assertEquals(0, records.size());
+
+
+        // when
+        trie.clear();
+
+        // then
+        trieStatistics = trie.gatherStatisticsWithRecursion();
+        assertEquals(0, trieStatistics.getCountOfCompleteWords());
+        assertEquals(1, trieStatistics.getCountOfNoCompleteWords());
+        assertTrue(trieStatistics.getValues().isEmpty());
     }
 
+    @Test
+    void noThreadSafeProtection() {
 
-    // --- infra ---
-    @ToString
-    static class Record implements TrieEntry<String> {
-        private String key;
-        private final String value = UUID.randomUUID().toString();
+        // given
+        final int threads = Runtime.getRuntime().availableProcessors() * 10;
+        System.out.println("threads: " + threads);
+        final ExecutorService workers = Executors.newFixedThreadPool(threads);
 
-        private final Instant createTime = Instant.now();
-        private Instant updateTime;
+        final int totalRuns = 5;
+        final int opsPerWriter = 30;
 
-        @Override
-        public String key() {
-            return key;
+        final Trie<Record> trie = new Trie<>();
+
+        final int writers = threads - 4;
+        final CyclicBarrier rendezvous = new CyclicBarrier(writers);
+        System.out.println("writers: " + writers);
+
+        final CountDownLatch workFinished = new CountDownLatch(writers);
+
+        final Runnable writer = () -> {
+
+            // rendezvous
+            try {
+                rendezvous.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail(e);
+            } catch (BrokenBarrierException | TimeoutException e) {
+                fail(e);
+            }
+
+
+            // actual work
+            for (int i =1; i<=opsPerWriter; i++) {
+
+                final String fullName = Faker.instance().name().fullName();
+                final String[] names = fullName.split(" ");
+
+                for (String name : names) {
+                    Record record = new Record();
+                    record.setKey(name);
+
+                    trie.insert(name, record);
+                }
+            }
+
+            workFinished.countDown();
+        };
+
+
+        boolean atLeastOneFail = false;
+        for (int i=1; i<=totalRuns; i++) {
+
+            if (atLeastOneFail) {
+                System.out.println("at least one fail...exiting");
+                break;
+            }
+
+            trie.clear();
+            System.out.println("run: " + i);
+
+
+            // when
+            for(int k =1; k<=writers; k++) {
+                workers.submit(writer);
+            }
+
+
+
+            // then
+            try {
+                boolean reachedZero = workFinished.await(15, TimeUnit.SECONDS);
+                if (!reachedZero) {
+                    fail("!reachedZero");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail(e);
+            }
+
+            int totalEntries = writers * opsPerWriter;
+            TrieStatistics<Record> trieStatistics = trie.gatherStatisticsWithRecursion();
+
+            System.out.println("totalEntries: " + totalEntries + " --- trieStatistics.getCountOfCompleteWords(): " + trieStatistics.getCountOfCompleteWords());
+
+            if (totalEntries != trieStatistics.getCountOfCompleteWords()) {
+                atLeastOneFail = true;
+            }
+
         }
 
-        @Override
-        public void setKey(String k) {
-            key = k;
-        }
+        assertTrue(atLeastOneFail);
 
-        @Override
-        public String value() {
-            return value;
-        }
-
-        @Override
-        public Instant createTime() {
-            return createTime;
-        }
-
-        @Override
-        public Instant updateTime() {
-            return updateTime;
-        }
-
-        @Override
-        public void triggerUpdateTime() {
-            updateTime = Instant.now();
-        }
-
-        @Override
-        public void indexContents() throws Exception {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public LinkedHashMap<String, String> getIndexedContentsByKeyPath() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Trie<?> getIndexedContentsByKeyPathTrie() {
-            throw new UnsupportedOperationException();
-        }
-
-        public String getValue() {
-            return value;
-        }
+        // clear
+        workers.shutdown();
     }
+
 }

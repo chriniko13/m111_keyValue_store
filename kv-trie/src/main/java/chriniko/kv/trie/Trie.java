@@ -1,9 +1,5 @@
 package chriniko.kv.trie;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-
 import java.util.*;
 
 public class Trie<T extends TrieEntry<?>> {
@@ -17,6 +13,12 @@ public class Trie<T extends TrieEntry<?>> {
         root.setPrefix("");
         root.setCompleteWord(false);
     }
+
+    public void clear() {
+        root.clear();
+        System.gc(); // give hint for gc process
+    }
+
 
     // Note: The time complexity is O(n), where n represents the length of the key.
     public TrieNode<T> insert(String key, T data) {
@@ -177,7 +179,7 @@ public class Trie<T extends TrieEntry<?>> {
     }
 
 
-    public TrieStatistics gatherStatisticsWithRecursion() {
+    public TrieStatistics<T> gatherStatisticsWithRecursion() {
 
         final List<T> values = new LinkedList<>();
 
@@ -186,7 +188,7 @@ public class Trie<T extends TrieEntry<?>> {
 
         _gatherStatistics(root, values, countOfNoCompleteWords, countOfCompleteWords);
 
-        return new TrieStatistics(countOfNoCompleteWords[0], countOfCompleteWords[0], values);
+        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], values);
 
     }
 
@@ -212,14 +214,7 @@ public class Trie<T extends TrieEntry<?>> {
 
     }
 
+
     // ------
 
-    @ToString
-    @RequiredArgsConstructor
-    @Getter
-    public class TrieStatistics {
-        private final int countOfNoCompleteWords;
-        private final int countOfCompleteWords;
-        private final List<T> values;
-    }
 }

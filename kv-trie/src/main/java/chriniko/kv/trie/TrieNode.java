@@ -21,4 +21,13 @@ public class TrieNode<T> {
     public TrieNode() {
         children = new HashMap<>();
     }
+
+    public void clear() {
+
+        setCompleteWord(false);
+        setPrefix("");
+
+        data = null;
+        children.clear();
+    }
 }

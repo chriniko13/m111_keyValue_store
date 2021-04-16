@@ -4,6 +4,7 @@ import chriniko.kv.datatypes.*;
 import chriniko.kv.datatypes.parser.DatatypesAntlrParser;
 import chriniko.kv.server.index.KvIndexedData;
 import chriniko.kv.trie.Trie;
+import chriniko.kv.trie.TrieStatistics;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +82,7 @@ public class KvRecordTest {
         // then (check indexed contents by using trie data-structure)
         Trie<KvIndexedData> indexedContentsByKeyPathTrie = kvRecord.getIndexedContentsByKeyPathTrie();
 
-        Trie<KvIndexedData>.TrieStatistics trieStatistics = indexedContentsByKeyPathTrie.gatherStatisticsWithRecursion();
+        TrieStatistics trieStatistics = indexedContentsByKeyPathTrie.gatherStatisticsWithRecursion();
 
         assertEquals(52, trieStatistics.getCountOfNoCompleteWords());
         assertEquals(8, trieStatistics.getCountOfCompleteWords());

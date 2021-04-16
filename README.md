@@ -16,8 +16,10 @@ The `kv-infra` consists from the following modules:
 
 <hr/>
     
-* [kv-broker](kv-broker/README.md) which is responsible for communicating with the `kv-server` and performing the supported actions
+* [kv-broker](kv-broker/README.md) is responsible for communicating with the `kv-server` and performing the supported actions
   (get, put, delete, query). A client application, will have as dependency the `kv-broker` to interact with our `kv-server`.
+
+  Both `kv-server` and `kv-broker` has been written with socket-programming(`java.nio.channels`) as infra (event loop - non blocking fashion).
 
   `kv-broker` has been developed as a library artifact ([KvBrokerApi.java](kv-broker/src/main/java/chriniko/kv/broker/KvBrokerApi.java)) 
   rather than a command line program which will receive input from the user as described in the assignment documentation.
@@ -92,9 +94,9 @@ The `kv-infra` consists from the following modules:
 
 <hr/>
   
-* [kv-server](kv-server/README.md) which is responsible for receiving the request from `kv-broker`, parsing it, executing
+* [kv-server](kv-server/README.md) is responsible for receiving the request from `kv-broker`, parsing it, executing
   the required logic, access if necessary the storage engine and reply-back to `kv-broker` with the correct response.
-  Both `kv-server` and `kv-broker` has been written with `java.nio.channels` as infra (event loop - non blocking fashion).
+  Both `kv-server` and `kv-broker` has been written with socket-programming(`java.nio.channels`) as infra (event loop - non blocking fashion).
 
   ![](kv_server_depends.png)
 
@@ -168,6 +170,7 @@ The `kv-infra` consists from the following modules:
 
 
 
+
 ### How to run ?
 
 TODO
@@ -178,6 +181,7 @@ TODO
 
 
 
+<hr/>
 
 ### Useful tutorials
 * Good info about ByteBuffers ==> `https://www.javacodegeeks.com/2012/12/the-java-bytebuffer-a-crash-course.html`
