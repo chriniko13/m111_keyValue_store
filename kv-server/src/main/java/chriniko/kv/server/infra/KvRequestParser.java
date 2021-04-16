@@ -94,11 +94,22 @@ public class KvRequestParser {
                 writeResponseMessage(byteBuffer, errorResp);
 
             } catch (ReadLockAcquireFailureException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("read lock error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.READ_LOCK_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
             } catch (WriteLockAcquireFailureException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("write lock error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.WRITE_LOCK_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
             } catch (StaleDataOperationException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("stale data error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.STALE_DATA_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
             }
 
 
@@ -129,7 +140,11 @@ public class KvRequestParser {
                 }
 
             } catch (ReadLockAcquireFailureException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("read lock error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.READ_LOCK_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
             }
 
         } else if (messageReceivedFromBroker.startsWith(Operations.DELETE.getMsgOp())) {
@@ -160,11 +175,22 @@ public class KvRequestParser {
                 }
 
             } catch (ReadLockAcquireFailureException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("read lock error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.READ_LOCK_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
             } catch (WriteLockAcquireFailureException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("write lock error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.WRITE_LOCK_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
             } catch (StaleDataOperationException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("stale data error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.STALE_DATA_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
             }
 
         } else if (messageReceivedFromBroker.startsWith(Operations.QUERY.getMsgOp())) {
@@ -199,7 +225,11 @@ public class KvRequestParser {
                 }
 
             } catch (ReadLockAcquireFailureException e) {
-                e.printStackTrace(); //TODO
+
+                System.err.println("read lock error occurred, msg: " + e.getMessage());
+                String errorResp = ProtocolConstants.ERROR_RESP.apply(ErrorTypeConstants.READ_LOCK_ERROR, e.getMessage());
+                writeResponseMessage(byteBuffer, errorResp);
+
             }
 
         } else {
