@@ -19,18 +19,34 @@ public class KvServer {
     private final String serverName;
     private final KvRequestParser kvRequestParser;
     private final KvStorageEngine kvStorageEngine;
+    private final KvServerConfig kvServerConfig;
 
     private ServerSocketChannel serverSocket;
 
 
-    private KvServer(String serverName, KvRequestParser kvRequestParser, KvStorageEngine kvStorageEngine) {
+    private KvServer(String serverName, KvRequestParser kvRequestParser, KvStorageEngine kvStorageEngine, KvServerConfig kvServerConfig) {
         this.serverName = serverName;
         this.kvRequestParser = kvRequestParser;
         this.kvStorageEngine = kvStorageEngine;
+        this.kvServerConfig = kvServerConfig;
     }
 
     public static KvServer create(String serverName) {
-        return new KvServer(serverName, new KvRequestParser(),  new KvStorageEngine());
+
+        KvServerConfig serverConfig = KvServerConfig.createDefault();
+
+        return new KvServer(serverName,
+                new KvRequestParser(serverConfig),
+                new KvStorageEngine(),
+                serverConfig
+        );
+    }
+    public static KvServer create(String serverName, KvServerConfig kvServerConfig) {
+        return new KvServer(serverName,
+                new KvRequestParser(kvServerConfig),
+                new KvStorageEngine(),
+                kvServerConfig
+        );
     }
 
     public KvStorageEngine getStorageEngine() {

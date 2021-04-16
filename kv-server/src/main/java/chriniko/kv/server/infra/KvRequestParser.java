@@ -13,6 +13,11 @@ import java.nio.charset.StandardCharsets;
 
 public class KvRequestParser {
 
+    private final KvServerConfig kvServerConfig;
+
+    public KvRequestParser(KvServerConfig kvServerConfig) {
+        this.kvServerConfig = kvServerConfig;
+    }
 
     public void process(final String serverName, final ByteBuffer byteBuffer, final KvStorageEngine kvStorageEngine) {
 
@@ -67,7 +72,7 @@ public class KvRequestParser {
             try {
                 System.out.println("SERIALIZED VALUE: " + serializedValue);
                 final Value<?> deserializedValue = DatatypesAntlrParser.process(serializedValue);
-                kvStorageEngine.save(key, deserializedValue, false);
+                kvStorageEngine.save(key, deserializedValue, kvServerConfig.isAsyncIndexing());
 
                 String okayResp = ProtocolConstants.OKAY_RESP;
                 System.out.println("WILL REPLY WITH: " + okayResp);
@@ -152,7 +157,7 @@ public class KvRequestParser {
 
             System.out.println("query operation: " + operation + " --- query received: " + key);
 
-            final Value<?> result = kvStorageEngine.query(rootKey, queryKey, true);
+            final Value<?> result = kvStorageEngine.query(rootKey, queryKey, kvServerConfig.isUseTrieForQuerySearch());
             if (result != null) {
 
                 final String serializedResult = result.asString();
