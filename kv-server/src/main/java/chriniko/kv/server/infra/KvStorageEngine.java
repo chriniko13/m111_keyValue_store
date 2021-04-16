@@ -14,6 +14,7 @@ import chriniko.kv.trie.lock_stripping.TrieLS;
 import chriniko.kv.trie.lock_stripping.TrieNodeLS;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ForkJoinPool;
@@ -66,6 +67,12 @@ public class KvStorageEngine {
         int size = trieStatistics.getCountOfCompleteWords();
         System.out.println("total records: " + size);
         return size;
+    }
+
+    // Note: maybe it is better to have 2 versions, one with lock, one with no lock.
+    public List<KvRecord> allRecords() throws ReadLockAcquireFailureException {
+        TrieStatistics<KvRecord> trieStatistics = memoDb.gatherStatisticsWithRecursion();
+        return trieStatistics.getValues();
     }
 
     public Value<?> fetch(String key) throws ReadLockAcquireFailureException {

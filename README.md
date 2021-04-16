@@ -225,11 +225,33 @@ The `kv-infra` consists from the following modules:
 ### How to run ?
 
 * First run eg: 3 `kv-servers` for more info on how to do it check --> [kv-server](kv-server/README.md)
+    * eg:
+        * `java -jar kv-server/target/kv-server-1.0-SNAPSHOT-jar-with-dependencies.jar 127.0.0.1 8081 18081`
+        * `java -jar kv-server/target/kv-server-1.0-SNAPSHOT-jar-with-dependencies.jar 127.0.0.1 8082 18082`
+        * `java -jar kv-server/target/kv-server-1.0-SNAPSHOT-jar-with-dependencies.jar 127.0.0.1 8083 18083`
+
+    * Example screen:
+        ![](3KvServersRun.png)
+      
+
 
 * Then you can run the `kv-broker` by providing the necessary input args, for more info check --> [kv-broker](kv-broker/README.md)
+    * eg:
+        * `java -jar kv-broker/target/kv-broker-1.0-SNAPSHOT-jar-with-dependencies.jar ~/Desktop/m111_kv_christidis_nikolaos/kv-broker/sampleServerFile.txt ~/Desktop/m111_kv_christidis_nikolaos/kv-broker/sampleData.txt 3`
+    
+    * Example screen:
+        ![](kvBrokerAnd3KvServerRun.png)
 
 
+* In order to check the index if was successful for each `kv-server` you can check the actuator of each one:
+    * `http://localhost:18081/`
+    * `http://localhost:18082/`
+    * `http://localhost:18083/`
 
+    * Images:
+        * ![](actuator1.png)
+        * ![](actuator2.png)
+        * ![](actuator3.png)
 
 
 <hr/>
