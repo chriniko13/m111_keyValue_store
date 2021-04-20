@@ -4,7 +4,7 @@ package chriniko.kv.trie.lock_stripping;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +37,7 @@ public class TrieNodeLS<T> {
     }
 
     public List<T> getOldData() {
-        return Collections.unmodifiableList(oldData);
+        return new ArrayList<>(oldData);
     }
 
     public void clear() {

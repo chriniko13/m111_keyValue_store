@@ -14,7 +14,8 @@ public class TrieStatistics<T> {
     private final int countOfNoCompleteWords;
 
     private final int countOfCompleteWords;
-    private final int countOfCompleteWordsWithOldData;
+    private final int countOfOldData;
 
+    private final List<?> nodes;
     private final List<T> values;
 }

@@ -210,21 +210,23 @@ public class Trie<T extends TrieEntry<?>> {
 
     public TrieStatistics<T> gatherStatisticsWithRecursion() {
 
+        final List<TrieNode<T>> nodes = new LinkedList<>();
         final List<T> values = new LinkedList<>();
 
         int[] countOfNoCompleteWords = new int[]{0};
         int[] countOfCompleteWords = new int[]{0};
         int[] countOfCompleteWordsWithOldData = new int[]{0};
 
-        _gatherStatistics(root, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
+        _gatherStatistics(root, nodes, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
 
-        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], countOfCompleteWordsWithOldData[0], values);
+        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], countOfCompleteWordsWithOldData[0], nodes, values);
 
     }
 
     // Note: nice to have ===> gatherStatisticsWithIteration [TODO]
 
-    private void _gatherStatistics(TrieNode<T> current, List<T> values,
+    private void _gatherStatistics(TrieNode<T> current,
+                                   List<TrieNode<T>> nodes, List<T> values,
                                    int[] countOfNoCompleteWords, int[] countOfCompleteWords, int[] countOfCompleteWordsWithOldData) {
 
 
@@ -240,7 +242,7 @@ public class Trie<T extends TrieEntry<?>> {
 
         HashMap<Character, TrieNode<T>> children = current.getChildren();
         for (TrieNode<T> value : children.values()) {
-            _gatherStatistics(value, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
+            _gatherStatistics(value, nodes, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
         }
 
     }

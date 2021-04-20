@@ -17,6 +17,8 @@
         <module>kv-datatypes</module>
         <module>kv-trie</module>
         <module>sample-app</module>
+        <module>kv-server-raft</module>
+        <module>kv-db</module>
     </modules>
 
     <properties>

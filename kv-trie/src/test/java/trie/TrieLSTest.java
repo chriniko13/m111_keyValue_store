@@ -1,6 +1,7 @@
 package trie;
 
 import chriniko.kv.trie.error.ReadLockAcquireFailureException;
+import chriniko.kv.trie.error.StaleDataOperationException;
 import chriniko.kv.trie.error.WriteLockAcquireFailureException;
 import chriniko.kv.trie.infra.TrieStatistics;
 import chriniko.kv.trie.lock_stripping.TrieLS;
@@ -14,8 +15,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -48,7 +49,6 @@ public class TrieLSTest {
         assertNotNull(oldData.get(0).updateTime());
 
 
-
         TrieStatistics<Record> trieStatistics = trie.<Record>gatherStatisticsWithRecursion();
         System.out.println(trieStatistics);
 
@@ -57,8 +57,9 @@ public class TrieLSTest {
                 trieStatistics.getValues().stream().map(Record::key).collect(Collectors.toSet())
         );
 
+        assertEquals(8, trieStatistics.getNodes().size());
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
-        assertEquals(1, trieStatistics.getCountOfCompleteWordsWithOldData());
+        assertEquals(1, trieStatistics.getCountOfOldData());
         assertEquals(14, trieStatistics.getCountOfNoCompleteWords());
     }
 
@@ -91,6 +92,7 @@ public class TrieLSTest {
                 trieStatistics.getValues().stream().map(Record::key).collect(Collectors.toSet())
         );
 
+        assertEquals(8, trieStatistics.getNodes().size());
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
         assertEquals(14, trieStatistics.getCountOfNoCompleteWords());
 
@@ -158,6 +160,7 @@ public class TrieLSTest {
                 trieStatistics.getValues().stream().map(r -> r.key()).collect(Collectors.toSet())
         );
 
+        assertEquals(8, trieStatistics.getNodes().size());
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
         assertEquals(14, trieStatistics.getCountOfNoCompleteWords());
 
@@ -261,35 +264,36 @@ public class TrieLSTest {
     }
 
 
-
     // --- multi threading test ---
 
     @Test
     void noThreadSafeProtection() {
 
         // given
-        Thread junitThread = Thread.currentThread();
+        boolean atLeastOneAssertionFailed = false;
+
+        final Thread junitThread = Thread.currentThread();
 
         final int threads = Runtime.getRuntime().availableProcessors() * 10;
         System.out.println("threads: " + threads);
 
         final ExecutorService workers = Executors.newCachedThreadPool();
 
-        final int totalRuns = 5;
+        final int totalRuns = 200;
 
-        TrieLS<Record> trie = new TrieLS<>(400, 500);
+        final TrieLS<Record> trie = new TrieLS<>(400, 500);
 
         final int writers = threads / 2;
         System.out.println("writers: " + writers);
 
 
+        final LongAdder staleDateCounter = new LongAdder();
+
         final AtomicReference<CyclicBarrier> rendezvousRef = new AtomicReference<>();
         final AtomicReference<CountDownLatch> workFinishedRef = new AtomicReference<>();
 
-        final Set<String> ids = IntStream.rangeClosed(1, 20).boxed().map(__ -> UUID.randomUUID().toString()).collect(Collectors.toSet());
-        if (ids.size() != 20) {
-            throw new IllegalStateException();
-        }
+        final String idToInsert = UUID.randomUUID().toString();
+        final int insertsToPerform = 15;
 
         final Runnable writer = () -> {
 
@@ -310,14 +314,18 @@ public class TrieLSTest {
 
 
                 // actual work
-                for (String id : ids) {
-
+                for (int op = 1; op <= insertsToPerform; op++) {
                     Record record = new Record();
-                    record.setKey(id);
+                    record.setKey(idToInsert);
 
-                    trie.insert(id, record);
+                    try {
+                        trie.insert(idToInsert, record);
+                    } catch (StaleDataOperationException e) {
+                        System.out.println("stale data operation exception occurred....");
+                        staleDateCounter.increment();
+                    }
+
                 }
-
 
             } catch (Exception e) {
                 e.printStackTrace(System.err);
@@ -331,8 +339,9 @@ public class TrieLSTest {
         };
 
 
-        for (int i=1; i<=totalRuns; i++) {
+        for (int i = 1; i <= totalRuns; i++) {
 
+            staleDateCounter.reset();
 
             rendezvousRef.set(new CyclicBarrier(writers, () -> System.out.println("LET'S ROLL!!!")));
             workFinishedRef.set(new CountDownLatch(writers));
@@ -340,19 +349,16 @@ public class TrieLSTest {
             try {
                 trie.clear();
             } catch (WriteLockAcquireFailureException e) {
-                e.printStackTrace(System.err);
                 fail(e);
-                junitThread.interrupt();
+                throw new RuntimeException(e);
             }
-
             System.out.println("\n\nrun: " + i);
 
 
             // when
-            for(int k =1; k<=writers; k++) {
+            for (int k = 1; k <= writers; k++) {
                 workers.submit(writer);
             }
-
 
 
             // then
@@ -369,34 +375,40 @@ public class TrieLSTest {
             }
 
 
-            TrieStatistics<Record> trieStatistics = null;
+            final TrieStatistics<Record> trieStatistics;
             try {
                 trieStatistics = trie.gatherStatisticsWithRecursion();
             } catch (ReadLockAcquireFailureException e) {
-                e.printStackTrace(System.err);
                 fail(e);
-                junitThread.interrupt();
+                throw new RuntimeException(e);
             }
 
 
-            int countOfCompleteWordsWithOldData = trieStatistics.getCountOfCompleteWordsWithOldData();
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+            int countOfCompleteWordsWithOldData = trieStatistics.getCountOfOldData();
             System.out.println("countOfCompleteWordsWithOldData: " + countOfCompleteWordsWithOldData);
-
 
             int countOfCompleteWords = trieStatistics.getCountOfCompleteWords();
             System.out.println("countOfCompleteWords: " + countOfCompleteWords);
 
+            long staleDataCounterSum = staleDateCounter.sum();
+            System.out.println("staleDataCounterSum: " + staleDataCounterSum);
 
-            int actualTotal = countOfCompleteWords + countOfCompleteWordsWithOldData;
-            System.out.println("totalEntries: " + ids.size() + " --- actualTotal: " + actualTotal);
+            int actualTotal = (int) (countOfCompleteWords + countOfCompleteWordsWithOldData + staleDataCounterSum);
+            System.out.println("actualTotal: " + actualTotal);
 
-            int expectedTotal = writers * ids.size();
+            int expectedTotal = writers * insertsToPerform;
             System.out.println("expectedTotal: " + expectedTotal);
 
 
+            if (actualTotal != expectedTotal) {
+                atLeastOneAssertionFailed = true;
+            }
 
         }
 
+
+        assertFalse(atLeastOneAssertionFailed);
 
         // clear
         workers.shutdown();

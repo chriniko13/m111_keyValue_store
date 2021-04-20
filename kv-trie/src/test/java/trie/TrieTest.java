@@ -13,7 +13,6 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,7 +56,7 @@ class TrieTest {
         );
 
         assertEquals(8, trieStatistics.getCountOfCompleteWords());
-        assertEquals(1, trieStatistics.getCountOfCompleteWordsWithOldData());
+        assertEquals(1, trieStatistics.getCountOfOldData());
         assertEquals(14, trieStatistics.getCountOfNoCompleteWords());
     }
 
@@ -269,6 +268,8 @@ class TrieTest {
     void noThreadSafeProtection() {
 
         // given
+        boolean atLeastOneAssertionFailed = false;
+
         Thread junitThread = Thread.currentThread();
 
         final int threads = Runtime.getRuntime().availableProcessors() * 10;
@@ -276,7 +277,7 @@ class TrieTest {
 
         final ExecutorService workers = Executors.newCachedThreadPool();
 
-        final int totalRuns = 5;
+        final int totalRuns = 200;
 
         final Trie<Record> trie = new Trie<>();
 
@@ -287,10 +288,8 @@ class TrieTest {
         final AtomicReference<CyclicBarrier> rendezvousRef = new AtomicReference<>();
         final AtomicReference<CountDownLatch> workFinishedRef = new AtomicReference<>();
 
-        final Set<String> ids = IntStream.rangeClosed(1, 20).boxed().map(__ -> UUID.randomUUID().toString()).collect(Collectors.toSet());
-        if (ids.size() != 20) {
-            throw new IllegalStateException();
-        }
+        final String idToInsert = UUID.randomUUID().toString();
+        final int insertsToPerform = 15;
 
         final Runnable writer = () -> {
 
@@ -311,13 +310,12 @@ class TrieTest {
 
 
                 // actual work
-                for (String id : ids) {
+                for (int op = 1; op<=insertsToPerform; op++) {
                     Record record = new Record();
-                    record.setKey(id);
+                    record.setKey(idToInsert);
 
-                    trie.insert(id, record);
+                    trie.insert(idToInsert, record);
                 }
-
 
             } catch (Exception e) {
                 e.printStackTrace(System.err);
@@ -361,10 +359,10 @@ class TrieTest {
                 junitThread.interrupt();
             }
 
-            TrieStatistics<Record> trieStatistics = trie.gatherStatisticsWithRecursion();
+            final TrieStatistics<Record> trieStatistics = trie.gatherStatisticsWithRecursion();
 
 
-            int countOfCompleteWordsWithOldData = trieStatistics.getCountOfCompleteWordsWithOldData();
+            int countOfCompleteWordsWithOldData = trieStatistics.getCountOfOldData();
             System.out.println("countOfCompleteWordsWithOldData: " + countOfCompleteWordsWithOldData);
 
 
@@ -373,15 +371,20 @@ class TrieTest {
 
 
             int actualTotal = countOfCompleteWords + countOfCompleteWordsWithOldData;
-            System.out.println("totalEntries: " + ids.size() + " --- actualTotal: " + actualTotal);
+            System.out.println("actualTotal: " + actualTotal);
 
 
-            int expectedTotal = writers * ids.size();
+            int expectedTotal = writers * insertsToPerform;
             System.out.println("expectedTotal: " + expectedTotal);
 
+            if (actualTotal != expectedTotal) {
+                atLeastOneAssertionFailed = true;
+            }
 
         }
 
+
+        assertTrue(atLeastOneAssertionFailed);
 
         // clear
         workers.shutdown();

@@ -7,7 +7,7 @@ Contains implementations of Trie data-structure.
 
 * [Trie.java](src/main/java/chriniko/kv/trie/Trie.java) is a no thread safe implementation
 
-* [TrieLS.java](src/main/java/chriniko/kv/trie/lock_stripping/TrieLS.java) is a thread safe implementation by using lock stripping:
+* [TrieLS.java](src/main/java/chriniko/kv/trie/lock_stripping/TrieLS.java) is a thread safe implementation by using lock stripping (fine-grained locking):
     ```text
         Brian Goetz - Java Concurrency in Practise - 11.4.3. Lock Striping
   

@@ -31,7 +31,7 @@ public class TrieLS<T extends TrieEntry<?>> {
     public void clear() throws WriteLockAcquireFailureException {
 
         // grab write lock
-        final Lock writeLock = root.readLock();
+        final Lock writeLock = root.writeLock();
         boolean writeLockAcquired;
         try {
             writeLockAcquired = writeLock.tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
@@ -63,149 +63,99 @@ public class TrieLS<T extends TrieEntry<?>> {
 
         TrieNodeLS<T> current = root;
 
-        char[] chars = key.toCharArray();
-
-        final char lastChar =  chars[chars.length - 1];
+        final char[] chars = key.toCharArray();
 
         boolean overrideHappened = false;
 
-        for (char aChar : chars) {
+        for (int i=0; i<chars.length; i++) {
 
-            final boolean isLastChar =  aChar == lastChar;
+            final char aChar = chars[i];
+
+            final boolean isLastChar =  i == chars.length - 1;
 
             sb.append(aChar);
 
-            // grab read lock
-            boolean readLockAcquired;
-            final Lock readLock = current.readLock();
+            // grab write lock
+            boolean writeLockAcquired;
+            final Lock writeLock = current.writeLock();
             try {
-                readLockAcquired = readLock.tryLock(readLockTimeoutMs, TimeUnit.MILLISECONDS);
+                writeLockAcquired = writeLock.tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
-            if (!readLockAcquired) {
-                throw new ReadLockAcquireFailureException("could not grab read lock");
+            if (!writeLockAcquired) {
+                throw new WriteLockAcquireFailureException("could not grab write lock");
             }
 
+            try {
 
-            final TrieNodeLS<T> existing = current.getChildren().get(aChar);
+                // process
+                final TrieNodeLS<T> existing = current.getChildren().get(aChar);
 
-
-            if (!overrideHappened
-                    && isLastChar
-                    && existing != null) {
-                overrideHappened = true;
-            }
-
-
-            if (existing == null) {
-
-                // release read lock
-                readLock.unlock();
-
-
-                // construct new node to be inserted
-                final TrieNodeLS<T> newChild = new TrieNodeLS<>();
-                newChild.setCompleteWord(false);
-                newChild.setPrefix(sb.toString());
-
-
-                // need for change, so grab write lock
-                final Lock writeLock = current.readLock();
-                boolean writeLockAcquired;
-                try {
-                    writeLockAcquired = writeLock.tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                }
-                if (!writeLockAcquired) {
-                    throw new WriteLockAcquireFailureException("could not grab write lock");
+                if (isLastChar
+                        && existing != null) {
+                    overrideHappened = true;
                 }
 
 
-                try {
-                    // re-read again, some other thread might have entered/created an entry for this char
-                    final TrieNodeLS<T> reReadForExisting = current.getChildren().get(aChar);
-                    if (reReadForExisting != null) { // someone inserted it.
-                        throw new StaleDataOperationException();
-                    }
+                if (existing == null) {
+                    // construct new node to be inserted
+                    final TrieNodeLS<T> newChild = new TrieNodeLS<>();
+                    newChild.setCompleteWord(false);
+                    newChild.setPrefix(sb.toString());
+
 
                     // modify
                     current.getChildren().put(aChar, newChild);
-
-                    // walk down
-                    current = current.getChildren().get(aChar);
-
-
-                } finally {
-                    // release write lock
-                    writeLock.unlock();
                 }
 
-            } else {
+                // walk down
+                current = current.getChildren().get(aChar);
 
-                try {
-                    // walk down
-                    current = current.getChildren().get(aChar);
-                } finally {
-                    // release read lock
-                    readLock.unlock();
+
+                if (isLastChar) {
+                    final String s = sb.toString();
+
+                    // modify
+                    if (overrideHappened) {
+                        if (current.getData() != null) {
+                            current.getData().triggerUpdateTime();
+                        }
+                        current.storeDataAsOld();
+                    }
+
+                    current.setCompleteWord(true);
+                    current.setPrefix(s);
+                    current.setData(data);
+                    data.setKey(s);
+
+                    return current;
                 }
+
+            } finally {
+                // release write lock
+                writeLock.unlock();
             }
+
 
         } // for.
 
-        // -------------------------------------------------------------------------------------------------------------
-
-        final String s = sb.toString();
-
-
-        // acquire write lock
-        boolean writeLockAcquired;
-        try {
-            writeLockAcquired = current.writeLock().tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-        if (!writeLockAcquired) {
-            throw new WriteLockAcquireFailureException("could not grab write lock");
-        }
-
-        try {
-            // modify
-            if (overrideHappened) {
-                if (current.getData() != null) {
-                    current.getData().triggerUpdateTime();
-                }
-                current.storeDataAsOld();
-            }
-
-            current.setCompleteWord(true);
-            current.setPrefix(s);
-            current.setData(data);
-            data.setKey(s);
-
-        } finally {
-            // release write lock
-            current.writeLock().unlock();
-        }
-
-        return current;
+        throw new IllegalStateException();
     }
 
 
     // Note: The time complexity is O(n), where n represents the length of the key.
     public Optional<T> find(String key) throws ReadLockAcquireFailureException {
 
-        char[] chars = key.toCharArray();
+        final char[] chars = key.toCharArray();
 
         TrieNodeLS<T> current = root;
 
-        for (char aChar : chars) {
+        for (int i = 0; i<chars.length; i++) {
 
+            char aChar = chars[i];
+            final boolean isLastChar =  i == chars.length - 1;
 
             // grab read lock
             boolean readLockAcquired;
@@ -228,6 +178,15 @@ public class TrieLS<T extends TrieEntry<?>> {
                     current = existing;
                 }
 
+                if (isLastChar) {
+
+                    // calculate result
+                    if (current.isCompleteWord() && current.getPrefix().equals(key)) {
+                        return Optional.of(current.getData());
+                    }
+                    return Optional.empty();
+                }
+
             } finally {
                 // release read lock
                 readLock.unlock();
@@ -235,33 +194,7 @@ public class TrieLS<T extends TrieEntry<?>> {
 
         } // for.
 
-        // -------------------------------------------------------------------------------------------------------------
-
-        // grab read lock
-        boolean readLockAcquired;
-        final Lock readLock = current.readLock();
-        try {
-            readLockAcquired = readLock.tryLock(readLockTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-        if (!readLockAcquired) {
-            throw new ReadLockAcquireFailureException("could not grab read lock");
-        }
-
-        try {
-            // calculate result
-            if (current.isCompleteWord() && current.getPrefix().equals(key)) {
-                return Optional.of(current.getData());
-            }
-            return Optional.empty();
-
-        } finally {
-            // release read lock
-            readLock.unlock();
-        }
-
+        throw new IllegalStateException();
     }
 
 
@@ -292,7 +225,7 @@ public class TrieLS<T extends TrieEntry<?>> {
         if (key.length() == index) {
 
             // acquire write lock
-            final Lock writeLock = current.readLock();
+            final Lock writeLock = current.writeLock();
             boolean writeLockAcquired;
             try {
                 writeLockAcquired = writeLock.tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
@@ -310,6 +243,10 @@ public class TrieLS<T extends TrieEntry<?>> {
                 current.setCompleteWord(false);
                 recordDeleted[0] = current.getData();
                 current.setData(null);
+                if (!current.getChildren().isEmpty()) {
+                    throw new IllegalStateException();
+                }
+                return true;
 
             } finally {
 
@@ -322,87 +259,46 @@ public class TrieLS<T extends TrieEntry<?>> {
 
             final char c = key.charAt(index);
 
-            // grab read lock
-            boolean readLockAcquired;
-            final Lock readLock = current.readLock();
+            // grab write lock
+            boolean writeLockAcquired;
+            final Lock writeLock = current.writeLock();
             try {
-                readLockAcquired = readLock.tryLock(readLockTimeoutMs, TimeUnit.MILLISECONDS);
+                writeLockAcquired = writeLock.tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
-            if (!readLockAcquired) {
-                throw new ReadLockAcquireFailureException("could not grab read lock");
+            if (!writeLockAcquired) {
+                throw new WriteLockAcquireFailureException("could not grab write lock");
             }
 
+            try {
 
-            final TrieNodeLS<T> existing = current.getChildren().get(c);
-            readLock.unlock();
+                // process
+                final TrieNodeLS<T> existing = current.getChildren().get(c);
+                if (existing != null) {
 
-            if (existing != null) {
+                    final boolean isSubtrieCompletelyEmpty = _delete(existing, key, index + 1, recordDeleted);
 
-
-                // need for change, so grab write lock
-                final Lock writeLock = current.readLock();
-                boolean writeLockAcquired;
-                try {
-                    writeLockAcquired = writeLock.tryLock(writeLockTimeoutMs, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                }
-                if (!writeLockAcquired) {
-                    throw new WriteLockAcquireFailureException("could not grab write lock");
-                }
-
-
-                try {
-                    // re-read again, some other thread might have entered/created an entry for this char
-                    final TrieNodeLS<T> reReadForExisting = current.getChildren().get(c);
-                    if (reReadForExisting == null) { // someone deleted it
-                        throw new StaleDataOperationException();
-                    }
-
-                    // process
-                    boolean isSubtrieCompletelyEmpty = _delete(existing, key, index + 1, recordDeleted);
                     if (isSubtrieCompletelyEmpty && EAGER_DELETION) {
                         current.getChildren().remove(c);
                     }
 
-                } finally {
-                    // release write lock
-                    writeLock.unlock();
                 }
 
+                // on exit of recursion...perform...
 
+                // Note: return true if and only if the currently examined subtrie is completely empty.
+                return current.getData() == null
+                        && current.getChildren().isEmpty();
+
+            } finally {
+
+                // release write lock
+                writeLock.unlock();
             }
         }
 
-
-        // -------------------------------------------------------------------------------------------------------------
-        // grab read lock
-        boolean readLockAcquired;
-        final Lock readLock = current.readLock();
-        try {
-            readLockAcquired = readLock.tryLock(readLockTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-        if (!readLockAcquired) {
-            throw new ReadLockAcquireFailureException("could not grab read lock");
-        }
-
-        try {
-
-            // Note: return true if and only if the currently examined subtrie is completely empty.
-            return current.getData() == null
-                    && current.getChildren().isEmpty();
-
-        } finally {
-            // release read lock
-            readLock.unlock();
-        }
     }
 
     // Note: nice to have ===> delete with iteration [TODO]
@@ -503,22 +399,24 @@ public class TrieLS<T extends TrieEntry<?>> {
 
     public TrieStatistics<T> gatherStatisticsWithRecursion() throws ReadLockAcquireFailureException {
 
+        final List<TrieNodeLS<T>> nodes = new LinkedList<>();
         final List<T> values = new LinkedList<>();
 
         int[] countOfNoCompleteWords = new int[]{0};
         int[] countOfCompleteWords = new int[]{0};
-        int[] countOfCompleteWordsWithOldData = new int[]{0};
+        int[] countOfOldData = new int[]{0};
 
-        _gatherStatistics(root, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
+        _gatherStatistics(root, nodes, values, countOfNoCompleteWords, countOfCompleteWords, countOfOldData);
 
-        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], countOfCompleteWordsWithOldData[0], values);
+        return new TrieStatistics<>(countOfNoCompleteWords[0], countOfCompleteWords[0], countOfOldData[0], nodes, values);
 
     }
 
     // Note: nice to have ===> gatherStatisticsWithIteration [TODO]
 
-    private void _gatherStatistics(TrieNodeLS<T> current, List<T> values,
-                                   int[] countOfNoCompleteWords, int[] countOfCompleteWords, int[] countOfCompleteWordsWithOldData) throws ReadLockAcquireFailureException {
+    private void _gatherStatistics(TrieNodeLS<T> current,
+                                   List<TrieNodeLS<T>> nodes, List<T> values,
+                                   int[] countOfNoCompleteWords, int[] countOfCompleteWords, int[] countOfOldData) throws ReadLockAcquireFailureException {
 
         // grab read lock
         boolean readLockAcquired;
@@ -539,8 +437,9 @@ public class TrieLS<T extends TrieEntry<?>> {
             // process
             if (current.isCompleteWord()) {
                 countOfCompleteWords[0] += 1;
-                countOfCompleteWordsWithOldData[0] += current.getOldData().size();
+                countOfOldData[0] += current.getOldData().size();
 
+                nodes.add(current);
                 values.add(current.getData());
             } else {
                 countOfNoCompleteWords[0] += 1;
@@ -549,7 +448,7 @@ public class TrieLS<T extends TrieEntry<?>> {
 
             final HashMap<Character, TrieNodeLS<T>> children = current.getChildren();
             for (TrieNodeLS<T> value : children.values()) {
-                _gatherStatistics(value, values, countOfNoCompleteWords, countOfCompleteWords, countOfCompleteWordsWithOldData);
+                _gatherStatistics(value, nodes, values, countOfNoCompleteWords, countOfCompleteWords, countOfOldData);
             }
 
 

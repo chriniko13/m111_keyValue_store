@@ -153,7 +153,7 @@ The `kv-infra` consists from the following modules:
 
     * [Trie.java](kv-trie/src/main/java/chriniko/kv/trie/Trie.java) is a no thread safe implementation
     
-    * [TrieLS.java](kv-trie/src/main/java/chriniko/kv/trie/lock_stripping/TrieLS.java) is a thread safe implementation by using lock stripping:
+    * [TrieLS.java](kv-trie/src/main/java/chriniko/kv/trie/lock_stripping/TrieLS.java) is a thread safe implementation by using lock stripping (fine-grained locking):
         ```text
             Brian Goetz - Java Concurrency in Practise - 11.4.3. Lock Striping
       
