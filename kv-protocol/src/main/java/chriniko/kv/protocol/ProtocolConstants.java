@@ -9,6 +9,14 @@ public class ProtocolConstants {
 
 
 
+
+    // message  constants
+    public static final String INFO_SEP =  "#"; // info separator
+
+
+
+
+
     // responses
     public static final String OKAY_RESP = "OK";
 

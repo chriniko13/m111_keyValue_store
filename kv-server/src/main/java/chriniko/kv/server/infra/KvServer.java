@@ -93,7 +93,7 @@ public class KvServer {
                         if (key.isAcceptable()) {
                             accept(key); // Got something on Accept event
                         } else if (key.isWritable()) {
-                            write(key); //// Got something on Write event
+                            write(key); // Got something on Write event
                         } else if (key.isReadable()) {
                             read(key); // Got something on Read event
                         }

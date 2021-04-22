@@ -1,10 +1,10 @@
-package chriniko.kv.server.raft;
+package chriniko.kv.server_raft.infra;
 
 
 /*
     TODO implement RAFT
  */
-public enum NodeState {
+public enum RaftNodeState {
 
     FOLLOWER,
     CANDIDATE,

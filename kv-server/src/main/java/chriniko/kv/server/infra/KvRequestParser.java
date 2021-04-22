@@ -127,6 +127,7 @@ public class KvRequestParser {
 
                     final String serializedResult = result.asString();
 
+                    //todo # extract to kv-protocol and fix server and broker....
                     final String okayResp = ProtocolConstants.OKAY_RESP + "#" + serializedResult;
                     System.out.println("WILL REPLY WITH: " + okayResp);
                     writeResponseMessage(byteBuffer, okayResp);
